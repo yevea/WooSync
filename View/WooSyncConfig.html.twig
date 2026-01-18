@@ -1,0 +1,16 @@
+<h2>Configuración WooSync</h2>
+
+<form method="post">
+    <label>URL WooCommerce</label><br>
+    <input type="text" name="url" value="{{ settingsGet('woosync', 'url') }}" style="width:400px"><br><br>
+
+    <label>Consumer Key</label><br>
+    <input type="text" name="ck" value="{{ settingsGet('woosync', 'ck') }}" style="width:400px"><br><br>
+
+    <label>Consumer Secret</label><br>
+    <input type="text" name="cs" value="{{ settingsGet('woosync', 'cs') }}" style="width:400px"><br><br>
+
+    <button type="submit" class="btn btn-primary">
+        Guardar
+    </button>
+</form>
