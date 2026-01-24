@@ -2,6 +2,18 @@
 
 {% block body %}
     <h1>Configuración WooSync</h1>
+
+
+
+<p>Debug URL: {{ settings('woosync_url', 'NO VALOR') }}</p>
+<p>Debug Key: {{ settings('woosync_key', 'NO VALOR') }}</p>
+<p>Debug Secret: {{ settings('woosync_secret', 'NO VALOR') }}</p>
+
+
+
+
+
+
     <form method="post">
         <label>URL WooCommerce</label>
         <input type="text" name="woosync_url" value="{{ settings('woosync_url', '') }}" required>
