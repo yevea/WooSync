@@ -2,7 +2,7 @@
 namespace FacturaScripts\Plugins\WooSync\Controller;
 
 use FacturaScripts\Core\Base\Controller;
-use FacturaScripts\Core\Lib\DataBase\DataBaseWhere;
+use FacturaScripts\Core\Base\DataBase\DataBaseWhere;  // ← Correct namespace for 2025.x
 use FacturaScripts\Core\Model\Settings;
 use FacturaScripts\Dinamic\Model\Cliente;
 use FacturaScripts\Dinamic\Model\LineaPedidoCliente;
@@ -99,10 +99,10 @@ class WooSyncConfig extends Controller
 
     private function syncProducts($url, $key, $secret)
     {
-        $apiUrl = $url . '/wp-json/wc/v3/products?consumer_key=' . $key . '&consumer_secret=' . $secret . '&per_page=100';
+        $apiUrl = $url . '/wp-json/wc/v3/products?consumer_key=' . urlencode($key) . '&consumer_secret=' . urlencode($secret) . '&per_page=100';
         $response = @file_get_contents($apiUrl);
         if ($response === false) {
-            $this->toolBox()->i18nLog()->error('Error al conectar con la API de productos.');
+            $this->toolBox()->i18nLog()->error('Error al conectar con la API de productos. Verifica allow_url_fopen o usa cURL.');
             return;
         }
 
@@ -136,7 +136,7 @@ class WooSyncConfig extends Controller
 
     private function syncCustomers($url, $key, $secret)
     {
-        $apiUrl = $url . '/wp-json/wc/v3/customers?consumer_key=' . $key . '&consumer_secret=' . $secret . '&per_page=100';
+        $apiUrl = $url . '/wp-json/wc/v3/customers?consumer_key=' . urlencode($key) . '&consumer_secret=' . urlencode($secret) . '&per_page=100';
         $response = @file_get_contents($apiUrl);
         if ($response === false) {
             $this->toolBox()->i18nLog()->error('Error al conectar con la API de clientes.');
@@ -168,7 +168,7 @@ class WooSyncConfig extends Controller
 
     private function syncOrders($url, $key, $secret)
     {
-        $apiUrl = $url . '/wp-json/wc/v3/orders?consumer_key=' . $key . '&consumer_secret=' . $secret . '&per_page=100';
+        $apiUrl = $url . '/wp-json/wc/v3/orders?consumer_key=' . urlencode($key) . '&consumer_secret=' . urlencode($secret) . '&per_page=100';
         $response = @file_get_contents($apiUrl);
         if ($response === false) {
             $this->toolBox()->i18nLog()->error('Error al conectar con la API de pedidos.');
@@ -207,7 +207,7 @@ class WooSyncConfig extends Controller
             foreach ($ord['line_items'] as $item) {
                 $linea = new LineaPedidoCliente();
                 $linea->idpedido     = $pedido->idpedido;
-                $linea->referencia   = $item['sku'] ?: $item['product_id'];
+                $linea->referencia   = $item['sku'] ?: (string)$item['product_id'];
                 $linea->descripcion  = $item['name'];
                 $linea->cantidad     = (float)$item['quantity'];
                 $linea->pvpunitario  = (float)$item['price'];
