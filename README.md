@@ -1,11 +1,12 @@
 # WooSync
 
-Hi I am Martin, carpenter, noob coder. This is my project of plugin for FacturaScripts(facturascripts.com). 
-The plugin shall sync products, clients, orders and stock from WooCommerce into Facturascripts.
+Hi I am Martin, carpenter, noob coder. This is my project is in its early stage, i.e. not finished. 
+The final objective is to create funcional plugin for FacturaScripts (facturascripts.com), 
+which syncs products, stock, clients, and orders from WooCommerce into Facturascripts.
 
-WooCommerce 10.4.3 / WordPress 6.9 install está en el mismo servidor con Facturascripts 2025.71 - 
-Todo debe poder gestionarse via cPanel, sin CLI. El objetivo de funcionamiento de WooSync
-es que aparezcan en FacturaScripts clientes y pedidos de WooCommerce.
+Condiciones actuales: WooCommerce 10.4.3 / WordPress 6.9 está en el mismo shared server con Facturascripts 2025.71 - 
+No tengo acceso a CLI. 
+El objetivo de funcionamiento de WooSync, que aparezcan en FacturaScripts clientes y pedidos de WooCommerce, no está logrado aun. 
 
 Configuración
 URL de WooCommerce
