@@ -2,8 +2,9 @@
 namespace FacturaScripts\Plugins\WooSync\Controller;
 
 use FacturaScripts\Core\Base\Controller;
-use FacturaScripts\Core\Base\DataBase\DataBaseWhere;  // ← Correct namespace for 2025.x
+use FacturaScripts\Core\Base\DataBase\DataBaseWhere;
 use FacturaScripts\Core\Model\Settings;
+use FacturaScripts\Core\Tools\Log;  // ← Import for logging
 use FacturaScripts\Dinamic\Model\Cliente;
 use FacturaScripts\Dinamic\Model\LineaPedidoCliente;
 use FacturaScripts\Dinamic\Model\PedidoCliente;
@@ -21,7 +22,7 @@ class WooSyncConfig extends Controller
         $action = $this->request->request->get('action');
         if ($action === 'save') {
             $this->saveSettings();
-            $this->toolBox()->i18nLog()->notice('Configuración guardada correctamente.');
+            Log::notice('Configuración guardada correctamente.');
         } elseif ($action === 'sync') {
             $this->doSync();
         }
@@ -39,12 +40,9 @@ class WooSyncConfig extends Controller
         $this->saveSetting('woosync_key',    $key);
         $this->saveSetting('woosync_secret', $secret);
 
-        $this->toolBox()->i18nLog()->notice('Configuración guardada correctamente.');
+        Log::notice('Configuración guardada correctamente.');
     }
 
-    /**
-     * Guarda o actualiza una configuración usando DataBaseWhere correctamente
-     */
     private function saveSetting($name, $value)
     {
         $setting = new Settings();
@@ -52,22 +50,19 @@ class WooSyncConfig extends Controller
         $where = [new DataBaseWhere('name', $name)];
 
         if ($setting->loadWhere($where)) {
-            // Existe → actualizar
             $setting->value = $value;
         } else {
-            // No existe → crear nuevo
             $setting->name  = $name;
             $setting->value = $value;
         }
 
         if (!$setting->save()) {
-            $this->toolBox()->i18nLog()->error('No se pudo guardar la clave: ' . $name);
+            Log::error('No se pudo guardar la clave: ' . $name);
         }
     }
 
     private function doSync()
     {
-        // Leer configuración con el mismo método seguro
         $setting = new Settings();
 
         $urlWhere    = [new DataBaseWhere('name', 'woosync_url')];
@@ -81,20 +76,15 @@ class WooSyncConfig extends Controller
         $secret = $setting->value ?? '';
 
         if (empty($url) || empty($key) || empty($secret)) {
-            $this->toolBox()->i18nLog()->error('Configuración incompleta. Por favor, guarda la URL y claves primero.');
+            Log::error('Configuración incompleta. Por favor, guarda la URL y claves primero.');
             return;
         }
 
-        // Sincronizar productos
         $this->syncProducts($url, $key, $secret);
-
-        // Sincronizar clientes
         $this->syncCustomers($url, $key, $secret);
-
-        // Sincronizar pedidos
         $this->syncOrders($url, $key, $secret);
 
-        $this->toolBox()->i18nLog()->notice('Sincronización completada.');
+        Log::notice('Sincronización completada.');
     }
 
     private function syncProducts($url, $key, $secret)
@@ -102,27 +92,25 @@ class WooSyncConfig extends Controller
         $apiUrl = $url . '/wp-json/wc/v3/products?consumer_key=' . urlencode($key) . '&consumer_secret=' . urlencode($secret) . '&per_page=100';
         $response = @file_get_contents($apiUrl);
         if ($response === false) {
-            $this->toolBox()->i18nLog()->error('Error al conectar con la API de productos. Verifica allow_url_fopen o usa cURL.');
+            Log::error('Error al conectar con la API de productos.');
             return;
         }
 
         $products = json_decode($response, true);
         if (!is_array($products)) {
-            $this->toolBox()->i18nLog()->error('Respuesta inválida de la API de productos.');
+            Log::error('Respuesta inválida de la API de productos.');
             return;
         }
 
         foreach ($products as $prod) {
             $producto = new Producto();
             if ($producto->loadFromCode($prod['slug'])) {
-                // Actualizar
                 $producto->descripcion = $prod['name'];
                 $producto->pvp = (float)$prod['price'];
                 if (!empty($prod['manage_stock']) && $prod['manage_stock'] === true) {
                     $producto->stockalm = (int)$prod['stock_quantity'];
                 }
             } else {
-                // Crear
                 $producto->referencia  = $prod['slug'];
                 $producto->descripcion = $prod['name'];
                 $producto->pvp         = (float)$prod['price'];
@@ -139,13 +127,13 @@ class WooSyncConfig extends Controller
         $apiUrl = $url . '/wp-json/wc/v3/customers?consumer_key=' . urlencode($key) . '&consumer_secret=' . urlencode($secret) . '&per_page=100';
         $response = @file_get_contents($apiUrl);
         if ($response === false) {
-            $this->toolBox()->i18nLog()->error('Error al conectar con la API de clientes.');
+            Log::error('Error al conectar con la API de clientes.');
             return;
         }
 
         $customers = json_decode($response, true);
         if (!is_array($customers)) {
-            $this->toolBox()->i18nLog()->error('Respuesta inválida de la API de clientes.');
+            Log::error('Respuesta inválida de la API de clientes.');
             return;
         }
 
@@ -153,14 +141,12 @@ class WooSyncConfig extends Controller
             $cliente = new Cliente();
             $where = [new DataBaseWhere('email', $cust['email'])];
             if ($cliente->loadWhere($where)) {
-                // Actualizar
                 $cliente->nombre = trim($cust['first_name'] . ' ' . $cust['last_name']);
             } else {
-                // Crear
                 $cliente->codcliente = 'WOO-' . $cust['id'];
                 $cliente->nombre     = trim($cust['first_name'] . ' ' . $cust['last_name']);
                 $cliente->email      = $cust['email'];
-                $cliente->cifnif     = 'WOO-' . $cust['id']; // temporal
+                $cliente->cifnif     = 'WOO-' . $cust['id'];
             }
             $cliente->save();
         }
@@ -171,13 +157,13 @@ class WooSyncConfig extends Controller
         $apiUrl = $url . '/wp-json/wc/v3/orders?consumer_key=' . urlencode($key) . '&consumer_secret=' . urlencode($secret) . '&per_page=100';
         $response = @file_get_contents($apiUrl);
         if ($response === false) {
-            $this->toolBox()->i18nLog()->error('Error al conectar con la API de pedidos.');
+            Log::error('Error al conectar con la API de pedidos.');
             return;
         }
 
         $orders = json_decode($response, true);
         if (!is_array($orders)) {
-            $this->toolBox()->i18nLog()->error('Respuesta inválida de la API de pedidos.');
+            Log::error('Respuesta inválida de la API de pedidos.');
             return;
         }
 
@@ -185,10 +171,9 @@ class WooSyncConfig extends Controller
             $pedido = new PedidoCliente();
             $where = [new DataBaseWhere('codigo', 'WOO-' . $ord['id'])];
             if ($pedido->loadWhere($where)) {
-                continue; // evitar duplicados
+                continue;
             }
 
-            // Buscar cliente por email
             $cliente = new Cliente();
             $cliWhere = [new DataBaseWhere('email', $ord['billing']['email'])];
             $cliente->loadWhere($cliWhere);
@@ -197,7 +182,7 @@ class WooSyncConfig extends Controller
             $pedido->nombrecliente  = trim($ord['billing']['first_name'] . ' ' . $ord['billing']['last_name']);
             $pedido->cifnif         = $cliente->cifnif;
             $pedido->total          = (float)$ord['total'];
-            $pedido->idestado       = 1; // Asumiendo 1 = nuevo
+            $pedido->idestado       = 1;
             $pedido->codigo         = 'WOO-' . $ord['id'];
 
             if (!$pedido->save()) {
