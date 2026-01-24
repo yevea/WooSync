@@ -30,14 +30,35 @@ class WooSyncConfig extends Controller
         $this->setTemplate('WooSyncConfig');
     }
 
-    private function saveSettings()
-    {
-        // Correct usage for 2025.71: static methods on AppSettings
-        AppSettings::set('woosync_url', $this->request->request->get('woosync_url'));
-        AppSettings::set('woosync_key', $this->request->request->get('woosync_key'));
-        AppSettings::set('woosync_secret', $this->request->request->get('woosync_secret'));
-        AppSettings::save();  // Persists changes to the database
-    }
+private function saveSettings()
+{
+    $url = $this->request->request->get('woosync_url');
+    $key = $this->request->request->get('woosync_key');
+    $secret = $this->request->request->get('woosync_secret');
 
+    // Save each setting as a separate row in the 'settings' table
+    $this->saveSetting('woosync_url', $url);
+    $this->saveSetting('woosync_key', $key);
+    $this->saveSetting('woosync_secret', $secret);
+
+    $this->toolBox()->i18nLog()->notice('Configuración guardada correctamente.');
+}
+
+/**
+ * Helper to save or update a single setting.
+ */
+private function saveSetting($name, $value)
+{
+    $setting = new \FacturaScripts\Core\Model\Settings();
+    
+    // Try to load existing
+    if (!$setting->loadWhere(['name' => $name])) {
+        // New setting
+        $setting->name = $name;
+    }
+    
+    $setting->value = $value;  // Can be string, json_encode if array needed later
+    $setting->save();
+}
     // ... The rest of the file (doSync, syncProducts, syncCustomers, syncOrders) stays exactly the same
 }
