@@ -3,7 +3,7 @@ namespace FacturaScripts\Plugins\WooSync\Controller;
 
 use FacturaScripts\Core\Base\Controller;
 use FacturaScripts\Core\Base\DataBase\DataBaseWhere;
-use FacturaScripts\Core\Model\Settings;
+use FacturaScripts\Dinamic\Model\Settings;
 use FacturaScripts\Dinamic\Model\Cliente;
 use FacturaScripts\Dinamic\Model\LineaPedidoCliente;
 use FacturaScripts\Dinamic\Model\PedidoCliente;
@@ -21,11 +21,22 @@ class EditWooSync extends Controller
         $action = $this->request->request->get('action');
         if ($action === 'save') {
             $this->saveSettings();
-            // Log removed to avoid error - config is saved anyway
+            $this->toolBox()->i18nLog()->info('Configuración guardada correctamente');
         } elseif ($action === 'sync') {
             $this->doSync();
+            $this->toolBox()->i18nLog()->info('Sincronización completada');
         }
-$this->setTemplate('EditWooSync');
+
+        $this->setTemplate('EditWooSync');
+    }
+
+    public function getPageData(): array
+    {
+        $pageData = parent::getPageData();
+        $pageData['menu'] = 'admin';
+        $pageData['title'] = 'WooSync';
+        $pageData['icon'] = 'fas fa-sync';
+        return $pageData;
     }
 
     private function saveSettings()
@@ -34,62 +45,34 @@ $this->setTemplate('EditWooSync');
         $key    = $this->request->request->get('woosync_key');
         $secret = $this->request->request->get('woosync_secret');
 
-        $this->saveSetting('woosync_url',    $url);
-        $this->saveSetting('woosync_key',    $key);
-        $this->saveSetting('woosync_secret', $secret);
-
-        // Success message removed - check logs or page reload to confirm
-    }
-
-    private function saveSetting($name, $value)
-    {
-        $setting = new Settings();
-
-        $where = [new DataBaseWhere('name', $name)];
-
-        if ($setting->loadWhere($where)) {
-            $setting->value = $value;
-        } else {
-            $setting->name  = $name;
-            $setting->value = $value;
-        }
-
-        $setting->save();  // No check for now
+        $this->toolBox()->appSettings()->set('WooSync', 'woosync_url', $url);
+        $this->toolBox()->appSettings()->set('WooSync', 'woosync_key', $key);
+        $this->toolBox()->appSettings()->set('WooSync', 'woosync_secret', $secret);
+        $this->toolBox()->appSettings()->save();
     }
 
     private function doSync()
     {
-        $setting = new Settings();
-
-        $urlWhere    = [new DataBaseWhere('name', 'woosync_url')];
-        $keyWhere    = [new DataBaseWhere('name', 'woosync_key')];
-        $secretWhere = [new DataBaseWhere('name', 'woosync_secret')];
-
-        $url    = $setting->loadWhere($urlWhere)    ? $setting->value : '';
-        $setting->loadWhere($keyWhere);
-        $key    = $setting->value ?? '';
-        $setting->loadWhere($secretWhere);
-        $secret = $setting->value ?? '';
+        $url    = $this->toolBox()->appSettings()->get('WooSync', 'woosync_url');
+        $key    = $this->toolBox()->appSettings()->get('WooSync', 'woosync_key');
+        $secret = $this->toolBox()->appSettings()->get('WooSync', 'woosync_secret');
 
         if (empty($url) || empty($key) || empty($secret)) {
-            // Error removed - will fail silently if empty
+            $this->toolBox()->i18nLog()->warning('Faltan credenciales de WooCommerce');
             return;
         }
 
         $this->syncProducts($url, $key, $secret);
         $this->syncCustomers($url, $key, $secret);
         $this->syncOrders($url, $key, $secret);
-
-        // Success removed
     }
 
-    // syncProducts, syncCustomers, syncOrders remain the same as previous version
-    // ... (copy them from your last file or the previous message)
     private function syncProducts($url, $key, $secret)
     {
         $apiUrl = $url . '/wp-json/wc/v3/products?consumer_key=' . urlencode($key) . '&consumer_secret=' . urlencode($secret) . '&per_page=100';
         $response = @file_get_contents($apiUrl);
         if ($response === false) {
+            $this->toolBox()->i18nLog()->error('Error al conectar con WooCommerce (productos)');
             return;
         }
 
@@ -123,6 +106,7 @@ $this->setTemplate('EditWooSync');
         $apiUrl = $url . '/wp-json/wc/v3/customers?consumer_key=' . urlencode($key) . '&consumer_secret=' . urlencode($secret) . '&per_page=100';
         $response = @file_get_contents($apiUrl);
         if ($response === false) {
+            $this->toolBox()->i18nLog()->error('Error al conectar con WooCommerce (clientes)');
             return;
         }
 
@@ -151,6 +135,7 @@ $this->setTemplate('EditWooSync');
         $apiUrl = $url . '/wp-json/wc/v3/orders?consumer_key=' . urlencode($key) . '&consumer_secret=' . urlencode($secret) . '&per_page=100';
         $response = @file_get_contents($apiUrl);
         if ($response === false) {
+            $this->toolBox()->i18nLog()->error('Error al conectar con WooCommerce (pedidos)');
             return;
         }
 
