@@ -12,7 +12,7 @@ use FacturaScripts\Dinamic\Model\Producto;
 /**
  * Controlador para la configuración y sincronización de WooSync.
  */
-class EditWooSync extends Controller
+class WooSyncConfig extends Controller
 {
     public function privateCore(&$response, $user, $permissions)
     {
