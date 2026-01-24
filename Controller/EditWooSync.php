@@ -25,8 +25,7 @@ class EditWooSync extends Controller
         } elseif ($action === 'sync') {
             $this->doSync();
         }
-
-        $this->setTemplate('WooSyncConfig');
+$this->setTemplate('EditWooSync');
     }
 
     private function saveSettings()
