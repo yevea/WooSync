@@ -4,17 +4,17 @@
     <h1>Configuración WooSync</h1>
     <form method="post">
         <label>URL WooCommerce</label>
-        <input type="text" name="woosync_url" value="{{ settings('woosync_url') }}" required>
+        <input type="text" name="woosync_url" value="{{ settings('woosync_url', '') }}" required>
         <br>
         <label>Consumer Key</label>
-        <input type="text" name="woosync_key" value="{{ settings('woosync_key') }}" required>
+        <input type="text" name="woosync_key" value="{{ settings('woosync_key', '') }}" required>
         <br>
         <label>Consumer Secret</label>
-        <input type="text" name="woosync_secret" value="{{ settings('woosync_secret') }}" required>
+        <input type="text" name="woosync_secret" value="{{ settings('woosync_secret', '') }}" required>
         <br>
         <button type="submit" name="action" value="save">Guardar</button>
         
-        {% if settings('woosync_url') and settings('woosync_key') and settings('woosync_secret') %}
+        {% if settings('woosync_url', '') and settings('woosync_key', '') and settings('woosync_secret', '') %}
             <button type="submit" name="action" value="sync">Sincronizar ahora</button>
         {% endif %}
     </form>
