@@ -3,8 +3,8 @@ namespace FacturaScripts\Plugins\WooSync\Controller;
 
 use FacturaScripts\Core\Lib\ExtendedController\PanelController;
 use FacturaScripts\Core\Lib\ExtendedController\HtmlView;
-use FacturaScripts\Core\App\AppSettings;
 use FacturaScripts\Core\Tools;
+use FacturaScripts\Core\Model\Settings;
 use FacturaScripts\Dinamic\Model\Producto;
 use FacturaScripts\Dinamic\Model\Cliente;
 use FacturaScripts\Dinamic\Model\PedidoCliente;
@@ -41,12 +41,11 @@ class WooSyncConfig extends PanelController
             return;
         }
 
-        $appSettings = new AppSettings();
-        $appSettings->reload(); // Ensure settings are loaded from DB
+        $group = $this->getPluginSettings();
 
-        $this->wc_url = $appSettings->get('woosync', 'wc_url', '');
-        $this->wc_key = $appSettings->get('woosync', 'wc_key', '');
-        $this->wc_secret = $appSettings->get('woosync', 'wc_secret', '');
+        $this->wc_url = $group['wc_url'] ?? '';
+        $this->wc_key = $group['wc_key'] ?? '';
+        $this->wc_secret = $group['wc_secret'] ?? '';
     }
 
     public function privateCore(&$response, $user, $permissions)
@@ -65,11 +64,18 @@ class WooSyncConfig extends PanelController
 
     private function saveConfig()
     {
-        $appSettings = new AppSettings();
-        $appSettings->set('woosync', 'wc_url', $this->request->request->get('wc_url'));
-        $appSettings->set('woosync', 'wc_key', $this->request->request->get('wc_key'));
-        $appSettings->set('woosync', 'wc_secret', $this->request->request->get('wc_secret'));
-        $appSettings->save();
+        $wc_url = $this->request->request->get('wc_url');
+        $wc_key = $this->request->request->get('wc_key');
+        $wc_secret = $this->request->request->get('wc_secret');
+
+        $group = [
+            'wc_url' => $wc_url,
+            'wc_key' => $wc_key,
+            'wc_secret' => $wc_secret
+        ];
+
+        $this->setPluginSettings($group);
+
         Tools::log()->notice('Config saved successfully.');
     }
 
@@ -83,14 +89,31 @@ class WooSyncConfig extends PanelController
         }
     }
 
+    private function getPluginSettings(): array
+    {
+        $settings = new Settings();
+        if ($settings->loadFromCode('woosync')) {
+            return json_decode($settings->value, true) ?? [];
+        }
+        return [];
+    }
+
+    private function setPluginSettings(array $group): bool
+    {
+        $settings = new Settings();
+        $settings->loadFromCode('woosync');
+        $settings->name = 'woosync';
+        $settings->value = json_encode($group);
+        return $settings->save();
+    }
+
     private function makeApiRequest(string $endpoint): array
     {
-        $appSettings = new AppSettings();
-        $appSettings->reload();
+        $group = $this->getPluginSettings();
 
-        $url = rtrim($appSettings->get('woosync', 'wc_url', ''), '/') . '/wp-json/wc/v3/' . $endpoint;
-        $key = $appSettings->get('woosync', 'wc_key', '');
-        $secret = $appSettings->get('woosync', 'wc_secret', '');
+        $url = rtrim($group['wc_url'] ?? '', '/') . '/wp-json/wc/v3/' . $endpoint;
+        $key = $group['wc_key'] ?? '';
+        $secret = $group['wc_secret'] ?? '';
 
         if (empty($url) || empty($key) || empty($secret)) {
             Tools::log()->error('Missing WooCommerce credentials.');
@@ -180,6 +203,7 @@ class WooSyncConfig extends PanelController
                 $line->cantidad = $item['quantity'] ?? 1;
                 $line->pvpunitario = $item['price'] ?? 0;
                 if (!$line->save()) {
+                    Tools::log()->error('Failed to save order line for order: ' . $code);
                     return false;
                 }
             }
