@@ -8,7 +8,7 @@ class Init extends InitClass
 {
     public function init()
     {
-        // Placeholder
+        // Placeholder for loading JS/CSS or registering hooks
     }
 
     public function update()
