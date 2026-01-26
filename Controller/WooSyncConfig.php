@@ -1,8 +1,7 @@
 <?php
 namespace FacturaScripts\Plugins\WooSync\Controller;
 
-use FacturaScripts\Core\Lib\ExtendedController\BaseController;
-use FacturaScripts\Core\Lib\ExtendedController\HtmlView;
+use FacturaScripts\Core\Lib\ExtendedController\PanelController;
 use FacturaScripts\Core\Model\AppSettings;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Dinamic\Model\Producto;
@@ -10,8 +9,12 @@ use FacturaScripts\Dinamic\Model\Cliente;
 use FacturaScripts\Dinamic\Model\PedidoCliente;
 use FacturaScripts\Dinamic\Model\LineaPedidoCliente;
 
-class WooSyncConfig extends BaseController
+class WooSyncConfig extends PanelController
 {
+    public $wc_url;
+    public $wc_key;
+    public $wc_secret;
+
     public function getPageData(): array
     {
         $data = parent::getPageData();
@@ -23,8 +26,7 @@ class WooSyncConfig extends BaseController
 
     protected function createViews()
     {
-        $viewName = 'WooSyncConfig';
-        $this->addHtmlView($viewName, 'WooSyncConfig', '', 'WooSync Configuration');
+        $this->addHtmlView('WooSyncConfig', 'WooSyncConfig', 'WooSync Configuration');
     }
 
     protected function loadData($viewName, $view)
@@ -33,11 +35,10 @@ class WooSyncConfig extends BaseController
             return;
         }
 
-        // Load settings and pass to template via setTemplateVar
         $appSettings = new AppSettings();
-        $this->setTemplateVar('wc_url', $appSettings->get('woosync', 'wc_url', ''));
-        $this->setTemplateVar('wc_key', $appSettings->get('woosync', 'wc_key', ''));
-        $this->setTemplateVar('wc_secret', $appSettings->get('woosync', 'wc_secret', ''));
+        $this->wc_url = $appSettings->get('woosync', 'wc_url', '');
+        $this->wc_key = $appSettings->get('woosync', 'wc_key', '');
+        $this->wc_secret = $appSettings->get('woosync', 'wc_secret', '');
     }
 
     public function privateCore(&$response, $user, $permissions)
@@ -47,6 +48,8 @@ class WooSyncConfig extends BaseController
         $action = $this->request->request->get('action');
         if ($action === 'save-config') {
             $this->saveConfig();
+            // Reload settings after save
+            $this->loadData('WooSyncConfig', $this->views['WooSyncConfig']);
         } elseif ($action === 'sync-now') {
             $this->syncData();
         }
@@ -64,7 +67,6 @@ class WooSyncConfig extends BaseController
 
     private function syncData()
     {
-        // Implement sync logic here
         $result = $this->syncProducts() && $this->syncCustomers() && $this->syncOrders();
         if ($result) {
             Tools::log()->notice('Sync completed successfully.');
@@ -103,14 +105,12 @@ class WooSyncConfig extends BaseController
 
     private function syncProducts(): bool
     {
-        $products = $this->makeApiRequest('products?per_page=100'); // Paginate if >100
+        $products = $this->makeApiRequest('products?per_page=100');
         foreach ($products as $wcProduct) {
             $fsProduct = new Producto();
             if ($fsProduct->loadFromCode($wcProduct['sku'])) {
-                // Update existing
                 $fsProduct->stockfis = $wcProduct['stock_quantity'];
             } else {
-                // Create new
                 $fsProduct->referencia = $wcProduct['sku'];
                 $fsProduct->descripcion = $wcProduct['name'];
                 $fsProduct->precio = $wcProduct['price'];
@@ -131,11 +131,9 @@ class WooSyncConfig extends BaseController
             $fsCustomer = new Cliente();
             $code = strval($wcCustomer['id']);
             if ($fsCustomer->loadFromCode($code)) {
-                // Update
                 $fsCustomer->nombre = $wcCustomer['first_name'] . ' ' . $wcCustomer['last_name'];
                 $fsCustomer->email = $wcCustomer['email'];
             } else {
-                // Create
                 $fsCustomer->codcliente = $code;
                 $fsCustomer->nombre = $wcCustomer['first_name'] . ' ' . $wcCustomer['last_name'];
                 $fsCustomer->email = $wcCustomer['email'];
@@ -149,12 +147,12 @@ class WooSyncConfig extends BaseController
 
     private function syncOrders(): bool
     {
-        $orders = $this->makeApiRequest('orders?per_page=100&status=completed'); // Only completed orders
+        $orders = $this->makeApiRequest('orders?per_page=100&status=completed');
         foreach ($orders as $wcOrder) {
             $fsOrder = new PedidoCliente();
             $code = strval($wcOrder['id']);
             if ($fsOrder->loadFromCode($code)) {
-                continue; // Skip if already exists (adjust as needed)
+                continue;
             }
             $fsOrder->numero = $code;
             $fsOrder->codcliente = strval($wcOrder['customer_id']);
@@ -163,7 +161,6 @@ class WooSyncConfig extends BaseController
             if (!$fsOrder->save()) {
                 return false;
             }
-            // Add lines (items) after saving order
             foreach ($wcOrder['line_items'] as $item) {
                 $line = new LineaPedidoCliente();
                 $line->idpedido = $fsOrder->idpedido;
