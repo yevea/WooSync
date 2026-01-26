@@ -1,6 +1,7 @@
 <?php
 namespace FacturaScripts\Plugins\WooSync\Controller;
 
+use FacturaScripts\Core\Base\DataBase\DataBaseWhere;
 use FacturaScripts\Core\Lib\ExtendedController\BaseController;
 use FacturaScripts\Core\Lib\ExtendedController\EditView;
 use FacturaScripts\Core\Tools;
@@ -34,8 +35,8 @@ class WooSyncConfig extends BaseController
         }
 
         $model = new ModelWooSyncConfig();
-        $model->loadFromCode(1); // Assume single row with ID 1
-        $view->loadData(false, [new DataBaseWhere('id', 1)]);
+        $where = [new DataBaseWhere('id', 1)];
+        $view->loadData(false, $where);
         if (!$model->exists()) {
             // Create default if not exists
             $model->id = 1;
