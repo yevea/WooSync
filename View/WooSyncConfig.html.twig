@@ -1,21 +1,30 @@
 {% extends "Master/MenuTemplate.html.twig" %}
 
 {% block body %}
-    <h1>Configuración WooSync</h1>
+    <div class="container">
+        <h1>WooSync Configuration</h1>
+        <form method="post">
+            <input type="hidden" name="action" value="save-config">
+            <div class="form-group">
+                <label>WooCommerce URL</label>
+                <input type="text" name="wc_url" value="{{ fsc.wc_url }}" class="form-control" placeholder="https://yourstore.com">
+            </div>
+            <div class="form-group">
+                <label>Consumer Key</label>
+                <input type="text" name="wc_key" value="{{ fsc.wc_key }}" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Consumer Secret</label>
+                <input type="text" name="wc_secret" value="{{ fsc.wc_secret }}" class="form-control">
+            </div>
+            <button type="submit" class="btn btn-primary">Save Configuration</button>
+        </form>
 
-    <form method="post">
-        <label>URL WooCommerce</label>
-        <input type="text" name="woosync_url" value="{{ settings('woosync_url', '') }}" required>
-        <br>
-        <label>Consumer Key</label>
-        <input type="text" name="woosync_key" value="{{ settings('woosync_key', '') }}" required>
-        <br>
-        <label>Consumer Secret</label>
-        <input type="text" name="woosync_secret" value="{{ settings('woosync_secret', '') }}" required>
-        <br>
-        <button type="submit" name="action" value="save">Guardar</button>
-        
-<button type="submit" name="action" value="sync">Sincronizar ahora (test)</button>
+        <hr>
 
-    </form>
+        <form method="post">
+            <input type="hidden" name="action" value="sync-now">
+            <button type="submit" class="btn btn-success">Synchronize Now</button>
+        </form>
+    </div>
 {% endblock %}
