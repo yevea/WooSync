@@ -1,7 +1,7 @@
 <?php
 namespace FacturaScripts\Plugins\WooSync\Controller;
 
-use FacturaScripts\Core\Lib\ExtendedController\PanelController;
+use FacturaScripts\Core\Lib\ExtendedController\BaseController;
 use FacturaScripts\Core\Lib\ExtendedController\HtmlView;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Core\Model\Settings;
@@ -10,11 +10,11 @@ use FacturaScripts\Dinamic\Model\Cliente;
 use FacturaScripts\Dinamic\Model\PedidoCliente;
 use FacturaScripts\Dinamic\Model\LineaPedidoCliente;
 
-class WooSyncConfig extends PanelController
+class WooSyncConfig extends BaseController
 {
-    public $wc_url;
-    public $wc_key;
-    public $wc_secret;
+    public $wc_url = '';
+    public $wc_key = '';
+    public $wc_secret = '';
 
     public function getPageData(): array
     {
@@ -27,12 +27,7 @@ class WooSyncConfig extends PanelController
 
     protected function createViews()
     {
-        $viewName = 'WooSyncConfig';
-        $title = 'WooSync Configuration';
-        $icon = 'fas fa-cogs';
-
-        $view = new HtmlView($viewName, $title, '', 'WooSyncConfig', $icon);
-        $this->addCustomView($viewName, $view);
+        $this->views['WooSyncConfig'] = new HtmlView('WooSyncConfig', 'WooSync Configuration', '', 'WooSyncConfig', 'fas fa-cogs');
     }
 
     protected function loadData($viewName, $view)
@@ -55,7 +50,6 @@ class WooSyncConfig extends PanelController
         $action = $this->request->request->get('action');
         if ($action === 'save-config') {
             $this->saveConfig();
-            // Reload settings after save
             $this->loadData('WooSyncConfig', $this->views['WooSyncConfig']);
         } elseif ($action === 'sync-now') {
             $this->syncData();
