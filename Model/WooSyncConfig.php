@@ -9,6 +9,7 @@ class WooSyncConfig extends ModelClass
 {
     use ModelTrait;
 
+    public $id;
     public $wc_url;
     public $wc_key;
     public $wc_secret;
