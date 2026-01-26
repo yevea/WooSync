@@ -2,6 +2,7 @@
 namespace FacturaScripts\Plugins\WooSync\Controller;
 
 use FacturaScripts\Core\Lib\ExtendedController\PanelController;
+use FacturaScripts\Core\Lib\ExtendedController\HtmlView;
 use FacturaScripts\Core\Model\AppSettings;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Dinamic\Model\Producto;
@@ -26,7 +27,12 @@ class WooSyncConfig extends PanelController
 
     protected function createViews()
     {
-        $this->addHtmlView('WooSyncConfig', 'WooSyncConfig', 'WooSync Configuration');
+        $viewName = 'WooSyncConfig';
+        $title = 'WooSync Configuration';
+        $icon = 'fas fa-cogs';
+
+        $view = new HtmlView($viewName, $title, '', 'WooSyncConfig', $icon);
+        $this->addCustomView($viewName, $view);
     }
 
     protected function loadData($viewName, $view)
