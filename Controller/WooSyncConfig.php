@@ -3,6 +3,7 @@ namespace FacturaScripts\Plugins\WooSync\Controller;
 
 use FacturaScripts\Core\Lib\ExtendedController\PanelController;
 use FacturaScripts\Core\Lib\ExtendedController\HtmlView;
+use FacturaScripts\Core\App\AppSettings;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Dinamic\Model\Producto;
 use FacturaScripts\Dinamic\Model\Cliente;
@@ -40,9 +41,12 @@ class WooSyncConfig extends PanelController
             return;
         }
 
-        $this->wc_url    = Tools::settings('woosync', 'wc_url', '');
-        $this->wc_key    = Tools::settings('woosync', 'wc_key', '');
-        $this->wc_secret = Tools::settings('woosync', 'wc_secret', '');
+        $appSettings = new AppSettings();
+        $appSettings->reload(); // Ensure settings are loaded from DB
+
+        $this->wc_url = $appSettings->get('woosync', 'wc_url', '');
+        $this->wc_key = $appSettings->get('woosync', 'wc_key', '');
+        $this->wc_secret = $appSettings->get('woosync', 'wc_secret', '');
     }
 
     public function privateCore(&$response, $user, $permissions)
@@ -52,6 +56,7 @@ class WooSyncConfig extends PanelController
         $action = $this->request->request->get('action');
         if ($action === 'save-config') {
             $this->saveConfig();
+            // Reload settings after save
             $this->loadData('WooSyncConfig', $this->views['WooSyncConfig']);
         } elseif ($action === 'sync-now') {
             $this->syncData();
@@ -60,11 +65,11 @@ class WooSyncConfig extends PanelController
 
     private function saveConfig()
     {
-        Tools::settingsSet('woosync', 'wc_url', $this->request->request->get('wc_url'));
-        Tools::settingsSet('woosync', 'wc_key', $this->request->request->get('wc_key'));
-        Tools::settingsSet('woosync', 'wc_secret', $this->request->request->get('wc_secret'));
-        Tools::settingsSave();
-
+        $appSettings = new AppSettings();
+        $appSettings->set('woosync', 'wc_url', $this->request->request->get('wc_url'));
+        $appSettings->set('woosync', 'wc_key', $this->request->request->get('wc_key'));
+        $appSettings->set('woosync', 'wc_secret', $this->request->request->get('wc_secret'));
+        $appSettings->save();
         Tools::log()->notice('Config saved successfully.');
     }
 
@@ -80,9 +85,12 @@ class WooSyncConfig extends PanelController
 
     private function makeApiRequest(string $endpoint): array
     {
-        $url = rtrim(Tools::settings('woosync', 'wc_url', ''), '/') . '/wp-json/wc/v3/' . $endpoint;
-        $key = Tools::settings('woosync', 'wc_key', '');
-        $secret = Tools::settings('woosync', 'wc_secret', '');
+        $appSettings = new AppSettings();
+        $appSettings->reload();
+
+        $url = rtrim($appSettings->get('woosync', 'wc_url', ''), '/') . '/wp-json/wc/v3/' . $endpoint;
+        $key = $appSettings->get('woosync', 'wc_key', '');
+        $secret = $appSettings->get('woosync', 'wc_secret', '');
 
         if (empty($url) || empty($key) || empty($secret)) {
             Tools::log()->error('Missing WooCommerce credentials.');
@@ -105,7 +113,6 @@ class WooSyncConfig extends PanelController
         return json_decode($response, true) ?? [];
     }
 
-    // syncProducts(), syncCustomers(), syncOrders() remain the same as before...
     private function syncProducts(): bool
     {
         $products = $this->makeApiRequest('products?per_page=100');
@@ -132,16 +139,17 @@ class WooSyncConfig extends PanelController
         $customers = $this->makeApiRequest('customers?per_page=100');
         foreach ($customers as $wcCustomer) {
             $fsCustomer = new Cliente();
-            $code = strval($wcCustomer['id'] ?? '');
+            $code = strval($wcCustomer['id'] ?? 0);
             if ($fsCustomer->loadFromCode($code)) {
-                $fsCustomer->nombre = trim(($wcCustomer['first_name'] ?? '') . ' ' . ($wcCustomer['last_name'] ?? ''));
+                $fsCustomer->nombre = ($wcCustomer['first_name'] ?? '') . ' ' . ($wcCustomer['last_name'] ?? '');
                 $fsCustomer->email = $wcCustomer['email'] ?? '';
             } else {
                 $fsCustomer->codcliente = $code;
-                $fsCustomer->nombre = trim(($wcCustomer['first_name'] ?? '') . ' ' . ($wcCustomer['last_name'] ?? ''));
+                $fsCustomer->nombre = ($wcCustomer['first_name'] ?? '') . ' ' . ($wcCustomer['last_name'] ?? '');
                 $fsCustomer->email = $wcCustomer['email'] ?? '';
             }
             if (!$fsCustomer->save()) {
+                Tools::log()->error('Failed to save customer: ' . $code);
                 return false;
             }
         }
@@ -153,22 +161,23 @@ class WooSyncConfig extends PanelController
         $orders = $this->makeApiRequest('orders?per_page=100&status=completed');
         foreach ($orders as $wcOrder) {
             $fsOrder = new PedidoCliente();
-            $code = strval($wcOrder['id'] ?? '');
+            $code = strval($wcOrder['id'] ?? 0);
             if ($fsOrder->loadFromCode($code)) {
                 continue;
             }
             $fsOrder->numero = $code;
-            $fsOrder->codcliente = strval($wcOrder['customer_id'] ?? '');
+            $fsOrder->codcliente = strval($wcOrder['customer_id'] ?? 0);
             $fsOrder->fecha = date('Y-m-d', strtotime($wcOrder['date_created'] ?? 'now'));
             $fsOrder->total = $wcOrder['total'] ?? 0;
             if (!$fsOrder->save()) {
+                Tools::log()->error('Failed to save order: ' . $code);
                 return false;
             }
             foreach ($wcOrder['line_items'] ?? [] as $item) {
                 $line = new LineaPedidoCliente();
                 $line->idpedido = $fsOrder->idpedido;
                 $line->referencia = $item['sku'] ?? '';
-                $line->cantidad = $item['quantity'] ?? 0;
+                $line->cantidad = $item['quantity'] ?? 1;
                 $line->pvpunitario = $item['price'] ?? 0;
                 if (!$line->save()) {
                     return false;
