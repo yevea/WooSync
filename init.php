@@ -7,11 +7,11 @@ class Init extends InitClass
 {
     public function init()
     {
-        // Load any JS/CSS if needed, or register cron jobs (but skip for now since no CLI)
+        // Placeholder for loading JS/CSS or registering hooks
     }
 
     public function update()
     {
-        // Run migrations if needed (e.g., add custom tables)
+        // Placeholder for database migrations if needed
     }
 }
