@@ -6,7 +6,7 @@ use FacturaScripts\Core\Base\ControllerPermissions;
 use FacturaScripts\Plugins\WooSync\Lib\WooCommerceAPI;
 use Symfony\Component\HttpFoundation\Response;
 
-class WooSyncSettings extends Controller
+class WooSyncSetting extends Controller
 {
     public function getPageData(): array  // ADDED: array
     {
