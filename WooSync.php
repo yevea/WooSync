@@ -18,7 +18,7 @@ class WooSync extends CronClass
         $this->setPeriod(300);
     }
 
-    public function run()
+    public function run(): void
     {
         // Execute synchronization if enabled
         if (Tools::settings('WooSync', 'enable_auto_sync', false)) {
@@ -28,7 +28,7 @@ class WooSync extends CronClass
         }
     }
 
-    private function syncOrders()
+    private function syncOrders(): void
     {
         try {
             $wooApi = new Lib\WooCommerceAPI();
@@ -48,22 +48,22 @@ class WooSync extends CronClass
         }
     }
 
-    private function syncProducts()
+    private function syncProducts(): void
     {
         // Product synchronization logic
     }
 
-    private function syncStock()
+    private function syncStock(): void
     {
         // Stock synchronization logic
     }
 
-    private function importOrder(array $orderData)
+    private function importOrder(array $orderData): void
     {
         // Import order to FacturaScripts
     }
 
-    private function log(string $message, string $level = 'INFO')
+    private function log(string $message, string $level = 'INFO'): void
     {
         $log = new WooSyncLog();
         $log->message = $message;
