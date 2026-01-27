@@ -107,18 +107,28 @@ class WooSyncConfig extends Controller
         Tools::log()->info('WooSync: Testing connection...');
         
         try {
+            // Check if settings are configured
+            if (empty($this->woocommerce_url) || empty($this->woocommerce_key) || empty($this->woocommerce_secret)) {
+                $this->toolBox()->i18nLog()->error('Please configure WooCommerce settings first.');
+                $this->redirect($this->url());
+                return;
+            }
+            
             $wooApi = new \FacturaScripts\Plugins\WooSync\Lib\WooCommerceAPI();
             
             if ($wooApi->testConnection()) {
                 Tools::log()->info('WooSync: Connection test successful');
-                Tools::flash()->success('Connection to WooCommerce successful!');
+                // Set success message in session
+                $this->request->getSession()->getFlashBag()->add('success', '✅ Connection to WooCommerce successful!');
             } else {
                 Tools::log()->error('WooSync: Connection test failed');
-                Tools::flash()->error('Connection to WooCommerce failed. Check your credentials.');
+                // Set error message in session
+                $this->request->getSession()->getFlashBag()->add('error', '❌ Connection to WooCommerce failed. Check your credentials and URL.');
             }
         } catch (\Exception $e) {
             Tools::log()->error('WooSync: Connection test error: ' . $e->getMessage());
-            Tools::flash()->error('Connection error: ' . $e->getMessage());
+            // Set error message in session
+            $this->request->getSession()->getFlashBag()->add('error', 'Connection error: ' . $e->getMessage());
         }
         
         $this->redirect($this->url());
@@ -129,11 +139,18 @@ class WooSyncConfig extends Controller
         Tools::log()->info('WooSync: Starting full synchronization');
         
         try {
+            // Check if settings are configured
+            if (empty($this->woocommerce_url) || empty($this->woocommerce_key) || empty($this->woocommerce_secret)) {
+                $this->request->getSession()->getFlashBag()->add('error', 'Please configure WooCommerce settings first.');
+                $this->redirect($this->url());
+                return;
+            }
+            
             $wooApi = new \FacturaScripts\Plugins\WooSync\Lib\WooCommerceAPI();
             
             // Test connection first
             if (!$wooApi->testConnection()) {
-                Tools::flash()->error('Cannot sync: Connection to WooCommerce failed.');
+                $this->request->getSession()->getFlashBag()->add('error', 'Cannot sync: Connection to WooCommerce failed.');
                 $this->redirect($this->url());
                 return;
             }
@@ -143,11 +160,11 @@ class WooSyncConfig extends Controller
             // $products = $wooApi->getProducts();
             // etc.
             
-            Tools::flash()->success('Synchronization started successfully!');
+            $this->request->getSession()->getFlashBag()->add('success', 'Synchronization started successfully!');
             
         } catch (\Exception $e) {
             Tools::log()->error('WooSync: Sync error: ' . $e->getMessage());
-            Tools::flash()->error('Sync error: ' . $e->getMessage());
+            $this->request->getSession()->getFlashBag()->add('error', 'Sync error: ' . $e->getMessage());
         }
         
         $this->redirect($this->url());
@@ -158,6 +175,13 @@ class WooSyncConfig extends Controller
         Tools::log()->info('WooSync: Starting order synchronization');
         
         try {
+            // Check if settings are configured
+            if (empty($this->woocommerce_url) || empty($this->woocommerce_key) || empty($this->woocommerce_secret)) {
+                $this->request->getSession()->getFlashBag()->add('error', 'Please configure WooCommerce settings first.');
+                $this->redirect($this->url());
+                return;
+            }
+            
             $wooApi = new \FacturaScripts\Plugins\WooSync\Lib\WooCommerceAPI();
             
             // Simple test - get first page of orders
@@ -165,11 +189,11 @@ class WooSyncConfig extends Controller
             $count = is_array($orders) ? count($orders) : 0;
             
             Tools::log()->info("WooSync: Found {$count} orders");
-            Tools::flash()->success("Found {$count} orders. Order sync logic needs to be implemented.");
+            $this->request->getSession()->getFlashBag()->add('success', "Found {$count} orders. Order sync logic needs to be implemented.");
             
         } catch (\Exception $e) {
             Tools::log()->error('WooSync: Order sync error: ' . $e->getMessage());
-            Tools::flash()->error('Order sync error: ' . $e->getMessage());
+            $this->request->getSession()->getFlashBag()->add('error', 'Order sync error: ' . $e->getMessage());
         }
         
         $this->redirect($this->url());
@@ -180,6 +204,13 @@ class WooSyncConfig extends Controller
         Tools::log()->info('WooSync: Starting product synchronization');
         
         try {
+            // Check if settings are configured
+            if (empty($this->woocommerce_url) || empty($this->woocommerce_key) || empty($this->woocommerce_secret)) {
+                $this->request->getSession()->getFlashBag()->add('error', 'Please configure WooCommerce settings first.');
+                $this->redirect($this->url());
+                return;
+            }
+            
             $wooApi = new \FacturaScripts\Plugins\WooSync\Lib\WooCommerceAPI();
             
             // Simple test - get first page of products
@@ -187,11 +218,11 @@ class WooSyncConfig extends Controller
             $count = is_array($products) ? count($products) : 0;
             
             Tools::log()->info("WooSync: Found {$count} products");
-            Tools::flash()->success("Found {$count} products. Product sync logic needs to be implemented.");
+            $this->request->getSession()->getFlashBag()->add('success', "Found {$count} products. Product sync logic needs to be implemented.");
             
         } catch (\Exception $e) {
             Tools::log()->error('WooSync: Product sync error: ' . $e->getMessage());
-            Tools::flash()->error('Product sync error: ' . $e->getMessage());
+            $this->request->getSession()->getFlashBag()->add('error', 'Product sync error: ' . $e->getMessage());
         }
         
         $this->redirect($this->url());
@@ -200,7 +231,7 @@ class WooSyncConfig extends Controller
     private function syncStock(): void
     {
         Tools::log()->info('WooSync: Starting stock synchronization');
-        Tools::flash()->info('Stock synchronization feature needs to be implemented.');
+        $this->request->getSession()->getFlashBag()->add('info', 'Stock synchronization feature needs to be implemented.');
         $this->redirect($this->url());
     }
 
