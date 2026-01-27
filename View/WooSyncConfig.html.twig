@@ -11,8 +11,7 @@
                     </h6>
                     <div class="small">
                         Status: 
-                        {% set currentUrl = fsc.getSetting('WooSync', 'woocommerce_url', '') %}
-                        {% if currentUrl %}
+                        {% if fsc.woocommerce_url %}
                             <span class="badge badge-success">Configured ✓</span>
                         {% else %}
                             <span class="badge badge-warning">Not configured</span>
@@ -22,7 +21,6 @@
                 <div class="card-body">
                     <!-- Success Message -->
                     {% if app.request.query.has('saved') and app.request.query.get('saved') == '1' %}
-                        {% set currentUrl = fsc.getSetting('WooSync', 'woocommerce_url', '') %}
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
                             <i class="fas fa-check-circle"></i> 
                             <strong>Success!</strong> WooSync settings have been saved successfully.
@@ -32,17 +30,15 @@
                         </div>
                     {% endif %}
                     
-                    {% set currentUrl = fsc.getSetting('WooSync', 'woocommerce_url', '') %}
-                    {% set currentKey = fsc.getSetting('WooSync', 'woocommerce_key', '') %}
-                    {% set currentSecret = fsc.getSetting('WooSync', 'woocommerce_secret', '') %}
-                    
-                    {% if currentUrl %}
+                    {% if fsc.woocommerce_url %}
                         <div class="alert alert-info mb-4">
                             <i class="fas fa-info-circle"></i> 
                             <strong>Current Configuration:</strong><br>
-                            Store URL: <code>{{ currentUrl }}</code><br>
-                            API Key: Configured ({{ currentKey|length }} characters)<br>
-                            API Secret: Configured ({{ currentSecret|length }} characters)
+                            Store URL: <code>{{ fsc.woocommerce_url }}</code><br>
+                            {% if fsc.woocommerce_key %}
+                                API Key: Configured ({{ fsc.woocommerce_key|length }} characters)<br>
+                                API Secret: Configured (hidden for security)
+                            {% endif %}
                         </div>
                     {% endif %}
                     
@@ -53,7 +49,7 @@
                             <label for="woocommerce_url">WooCommerce Store URL *</label>
                             <input type="url" id="woocommerce_url" name="woocommerce_url" 
                                    class="form-control" 
-                                   value="{{ currentUrl }}"
+                                   value="{{ fsc.woocommerce_url }}"
                                    placeholder="https://yourstore.com" required>
                             <small class="form-text text-muted">
                                 Must be a valid HTTPS URL (e.g., https://yourstore.com)
@@ -64,7 +60,7 @@
                             <label for="woocommerce_key">Consumer Key *</label>
                             <input type="text" id="woocommerce_key" name="woocommerce_key" 
                                    class="form-control" 
-                                   value="{{ currentKey }}"
+                                   value="{{ fsc.woocommerce_key }}"
                                    required>
                             <small class="form-text text-muted">
                                 Consumer key from WooCommerce REST API
@@ -75,7 +71,7 @@
                             <label for="woocommerce_secret">Consumer Secret *</label>
                             <input type="password" id="woocommerce_secret" name="woocommerce_secret" 
                                    class="form-control" 
-                                   value="{{ currentSecret }}"
+                                   value="{{ fsc.woocommerce_secret }}"
                                    required>
                             <small class="form-text text-muted">
                                 Consumer secret from WooCommerce REST API
@@ -85,31 +81,61 @@
                         <div class="form-group mt-4">
                             <button type="submit" class="btn btn-primary btn-lg">
                                 <i class="fas fa-save fa-fw"></i> 
-                                {% if currentUrl %}Update Settings{% else %}Save Settings{% endif %}
+                                {% if fsc.woocommerce_url %}Update Settings{% else %}Save Settings{% endif %}
                             </button>
                             
-                            {% if currentUrl %}
+                            {% if fsc.woocommerce_url %}
                                 <a href="{{ fsc.url() }}?action=test" class="btn btn-info ml-2">
                                     <i class="fas fa-plug fa-fw"></i> Test Connection
+                                </a>
+                                
+                                <a href="{{ fsc.url() }}?action=sync" class="btn btn-success ml-2">
+                                    <i class="fas fa-sync-alt fa-fw"></i> Sync Now
                                 </a>
                             {% endif %}
                         </div>
                     </form>
                     
-                    {% if currentUrl %}
+                    {% if fsc.woocommerce_url %}
                         <hr class="my-4">
                         <div class="card border-success">
                             <div class="card-header bg-success text-white">
-                                <i class="fas fa-check-circle fa-fw"></i> Next Steps
+                                <i class="fas fa-sync-alt fa-fw"></i> Synchronization Options
                             </div>
                             <div class="card-body">
-                                <p>Your WooCommerce connection is configured. You can now:</p>
-                                <ol>
-                                    <li><strong>Test the connection</strong> - Verify API access works</li>
-                                    <li><strong>Configure synchronization</strong> - Set up what data to sync</li>
-                                    <li><strong>Run manual sync</strong> - Import orders/products immediately</li>
-                                    <li><strong>Enable auto-sync</strong> - Set up automatic synchronization</li>
-                                </ol>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6><i class="fas fa-shopping-cart fa-fw"></i> Order Sync</h6>
+                                        <p>Synchronize WooCommerce orders to FacturaScripts:</p>
+                                        <ul class="small">
+                                            <li>Import new orders as customers</li>
+                                            <li>Create invoices from orders</li>
+                                            <li>Update order status</li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6><i class="fas fa-cubes fa-fw"></i> Product Sync</h6>
+                                        <p>Synchronize products between systems:</p>
+                                        <ul class="small">
+                                            <li>Import WooCommerce products</li>
+                                            <li>Sync stock quantities</li>
+                                            <li>Update prices</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="text-center mt-3">
+                                    <div class="btn-group">
+                                        <a href="{{ fsc.url() }}?action=sync-orders" class="btn btn-outline-primary">
+                                            <i class="fas fa-download fa-fw"></i> Import Orders
+                                        </a>
+                                        <a href="{{ fsc.url() }}?action=sync-products" class="btn btn-outline-primary">
+                                            <i class="fas fa-exchange-alt fa-fw"></i> Sync Products
+                                        </a>
+                                        <a href="{{ fsc.url() }}?action=sync-stock" class="btn btn-outline-primary">
+                                            <i class="fas fa-boxes fa-fw"></i> Update Stock
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     {% endif %}
