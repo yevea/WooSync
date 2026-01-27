@@ -24,26 +24,13 @@ class WooSyncConfig extends Controller
         
         Tools::log()->debug('WooSyncConfig: privateCore called - Method: ' . $this->request->getMethod());
         
-        // Check if this is a POST request with form submission
-        if ($this->request->getMethod() === 'POST') {
-            $action = $this->request->request->get('action', '');
-            Tools::log()->debug('WooSyncConfig: POST action = ' . $action);
-            
-            if ($action === 'save') {
-                $this->saveSettings();
-                return; // Stop further processing after save
-            }
-        } else {
-            // GET request - check for success parameter
-            $saved = $this->request->query->get('saved', '');
-            if ($saved === '1') {
-                Tools::log()->debug('WooSyncConfig: Showing success message');
-                // Success message will be shown in template
-            }
+        // Process form submission
+        if ($this->request->request->get('action') === 'save') {
+            $this->saveSettings();
         }
     }
 
-    private function saveSettings(): void
+    private function saveSettings(): bool
     {
         Tools::log()->debug('WooSyncConfig: saveSettings called');
         
@@ -53,14 +40,13 @@ class WooSyncConfig extends Controller
         $secret = $this->request->request->get('woocommerce_secret', '');
         
         Tools::log()->debug('WooSyncConfig: URL = ' . $url);
-        Tools::log()->debug('WooSyncConfig: Key length = ' . strlen($key));
-        Tools::log()->debug('WooSyncConfig: Secret length = ' . strlen($secret));
+        Tools::log()->debug('WooSyncConfig: Key = ' . (!empty($key) ? 'SET' : 'EMPTY'));
+        Tools::log()->debug('WooSyncConfig: Secret = ' . (!empty($secret) ? 'SET' : 'EMPTY'));
         
         // Validate
         if (empty($url) || empty($key) || empty($secret)) {
             Tools::log()->error('WooSyncConfig: Validation failed - empty fields');
-            // Don't redirect - show error on same page
-            return;
+            return false;
         }
         
         // Save settings
@@ -70,9 +56,21 @@ class WooSyncConfig extends Controller
         
         Tools::log()->info('WooSync settings saved: ' . $url);
         
-        // Redirect to show success message
-        Tools::log()->debug('WooSyncConfig: Redirecting to success page');
-        $this->redirect($this->url() . '?saved=1');
+        // Verify save
+        $savedUrl = Tools::settings('WooSync', 'woocommerce_url', '');
+        Tools::log()->debug('WooSyncConfig: Verified URL = ' . $savedUrl);
+        
+        return true;
+    }
+
+    protected function execAfterAction(string $action): void
+    {
+        Tools::log()->debug('WooSyncConfig: execAfterAction called with action: ' . $action);
+        
+        if ($action === 'save') {
+            // Settings were saved, redirect to show success
+            $this->redirect($this->url() . '?saved=1');
+        }
     }
 
     protected function createViews(): void
