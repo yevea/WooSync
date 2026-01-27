@@ -8,8 +8,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class WooSyncConfig extends Controller
 {
-    // Track if we just saved settings
-    private $justSaved = false;
+    // Store settings for template access
+    public $woocommerce_url = '';
+    public $woocommerce_key = '';
+    public $woocommerce_secret = '';
     
     public function getPageData(): array
     {
@@ -27,15 +29,17 @@ class WooSyncConfig extends Controller
         
         Tools::log()->debug('WooSyncConfig: privateCore called - Method: ' . $this->request->getMethod());
         
+        // Load saved settings
+        $this->woocommerce_url = Tools::settings('WooSync', 'woocommerce_url', '');
+        $this->woocommerce_key = Tools::settings('WooSync', 'woocommerce_key', '');
+        $this->woocommerce_secret = Tools::settings('WooSync', 'woocommerce_secret', '');
+        
+        Tools::log()->debug('WooSyncConfig: Loaded URL = ' . $this->woocommerce_url);
+        Tools::log()->debug('WooSyncConfig: Loaded Key length = ' . strlen($this->woocommerce_key));
+        
         // Process form submission
         if ($this->request->request->get('action') === 'save') {
-            $success = $this->saveSettings();
-            if ($success) {
-                $this->justSaved = true;
-                // Redirect immediately after successful save
-                $this->redirect($this->url() . '?saved=1');
-                return;
-            }
+            $this->saveSettings();
         }
     }
 
@@ -65,10 +69,22 @@ class WooSyncConfig extends Controller
         
         Tools::log()->info('WooSync settings saved: ' . $url);
         
-        // Force immediate save
-        $this->dataBase->commit();
+        // Update instance variables for immediate display
+        $this->woocommerce_url = $url;
+        $this->woocommerce_key = $key;
+        $this->woocommerce_secret = $secret;
         
         return true;
+    }
+
+    protected function execAfterAction(string $action): void
+    {
+        Tools::log()->debug('WooSyncConfig: execAfterAction called with action: ' . $action);
+        
+        if ($action === 'save') {
+            // Redirect after successful save
+            $this->redirect($this->url() . '?saved=1&refresh=' . time());
+        }
     }
 
     protected function createViews(): void
