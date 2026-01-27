@@ -13,7 +13,7 @@
                         Status: 
                         {% set currentUrl = fsc.getSetting('WooSync', 'woocommerce_url', '') %}
                         {% if currentUrl %}
-                            <span class="badge badge-success">Configured</span>
+                            <span class="badge badge-success">Configured ✓</span>
                         {% else %}
                             <span class="badge badge-warning">Not configured</span>
                         {% endif %}
@@ -23,37 +23,31 @@
                     <!-- Success Message -->
                     {% if app.request.query.has('saved') and app.request.query.get('saved') == '1' %}
                         {% set currentUrl = fsc.getSetting('WooSync', 'woocommerce_url', '') %}
-                        {% if currentUrl %}
-                            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                                <i class="fas fa-check-circle"></i> 
-                                <strong>Success!</strong> Settings have been saved successfully.
-                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
-                            </div>
-                            <div class="alert alert-info small">
-                                <i class="fas fa-info-circle"></i> 
-                                <strong>Current configuration:</strong><br>
-                                URL: <code>{{ currentUrl }}</code><br>
-                                Saved at: {{ "now"|date("Y-m-d H:i:s") }}
-                            </div>
-                        {% else %}
-                            <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                                <i class="fas fa-exclamation-triangle"></i> 
-                                <strong>Warning:</strong> Form was submitted but settings might not have been saved.
-                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
-                            </div>
-                        {% endif %}
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fas fa-check-circle"></i> 
+                            <strong>Success!</strong> WooSync settings have been saved successfully.
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                    {% endif %}
+                    
+                    {% set currentUrl = fsc.getSetting('WooSync', 'woocommerce_url', '') %}
+                    {% set currentKey = fsc.getSetting('WooSync', 'woocommerce_key', '') %}
+                    {% set currentSecret = fsc.getSetting('WooSync', 'woocommerce_secret', '') %}
+                    
+                    {% if currentUrl %}
+                        <div class="alert alert-info mb-4">
+                            <i class="fas fa-info-circle"></i> 
+                            <strong>Current Configuration:</strong><br>
+                            Store URL: <code>{{ currentUrl }}</code><br>
+                            API Key: Configured ({{ currentKey|length }} characters)<br>
+                            API Secret: Configured ({{ currentSecret|length }} characters)
+                        </div>
                     {% endif %}
                     
                     <form method="post" action="{{ fsc.url() }}">
                         <input type="hidden" name="action" value="save">
-                        
-                        {% set currentUrl = fsc.getSetting('WooSync', 'woocommerce_url', '') %}
-                        {% set currentKey = fsc.getSetting('WooSync', 'woocommerce_key', '') %}
-                        {% set currentSecret = fsc.getSetting('WooSync', 'woocommerce_secret', '') %}
                         
                         <div class="form-group">
                             <label for="woocommerce_url">WooCommerce Store URL *</label>
@@ -90,11 +84,12 @@
                         
                         <div class="form-group mt-4">
                             <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="fas fa-save fa-fw"></i> Save Settings
+                                <i class="fas fa-save fa-fw"></i> 
+                                {% if currentUrl %}Update Settings{% else %}Save Settings{% endif %}
                             </button>
                             
                             {% if currentUrl %}
-                                <a href="{{ fsc.url() }}?test=1" class="btn btn-info ml-2">
+                                <a href="{{ fsc.url() }}?action=test" class="btn btn-info ml-2">
                                     <i class="fas fa-plug fa-fw"></i> Test Connection
                                 </a>
                             {% endif %}
@@ -103,19 +98,18 @@
                     
                     {% if currentUrl %}
                         <hr class="my-4">
-                        <div class="card border-primary">
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <i class="fas fa-check-circle fa-fw"></i> Next Steps
+                            </div>
                             <div class="card-body">
-                                <h6 class="card-title text-primary">
-                                    <i class="fas fa-check-circle fa-fw"></i> Configuration Complete
-                                </h6>
-                                <p class="card-text">
-                                    Your WooCommerce settings are configured. You can now:
-                                </p>
-                                <ul class="mb-0">
-                                    <li>Test the connection to verify API access</li>
-                                    <li>Set up synchronization schedules</li>
-                                    <li>Configure which data to sync (orders, products, etc.)</li>
-                                </ul>
+                                <p>Your WooCommerce connection is configured. You can now:</p>
+                                <ol>
+                                    <li><strong>Test the connection</strong> - Verify API access works</li>
+                                    <li><strong>Configure synchronization</strong> - Set up what data to sync</li>
+                                    <li><strong>Run manual sync</strong> - Import orders/products immediately</li>
+                                    <li><strong>Enable auto-sync</strong> - Set up automatic synchronization</li>
+                                </ol>
                             </div>
                         </div>
                     {% endif %}
@@ -152,8 +146,15 @@ document.addEventListener('DOMContentLoaded', function() {
             // Show loading indicator
             var submitBtn = form.querySelector('button[type="submit"]');
             if (submitBtn) {
+                var originalText = submitBtn.innerHTML;
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin fa-fw"></i> Saving...';
                 submitBtn.disabled = true;
+                
+                // Restore button after 5 seconds (in case of error)
+                setTimeout(function() {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }, 5000);
             }
             
             return true;
