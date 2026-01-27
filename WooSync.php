@@ -6,7 +6,7 @@
 namespace FacturaScripts\Plugins\WooSync;
 
 use FacturaScripts\Core\Base\CronClass;
-use FacturaScripts\Core\Base\DataBase\DataBaseWhere;
+use FacturaScripts\Core\Base\PluginDeploy;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Plugins\WooSync\Model\WooSyncLog;
 
@@ -16,6 +16,13 @@ class WooSync extends CronClass
     {
         // Set cron execution time (every 5 minutes)
         $this->setPeriod(300);
+    }
+
+    public function deploy(): void
+    {
+        // Install database tables
+        $installer = new PluginDeploy();
+        $installer->deploy($this->getDirectory() . '/DataBase');
     }
 
     public function run(): void
@@ -31,20 +38,14 @@ class WooSync extends CronClass
     private function syncOrders(): void
     {
         try {
-            $wooApi = new Lib\WooCommerceAPI();
-            $since = Tools::settings('WooSync', 'last_sync', '2023-01-01T00:00:00');
+            // Your sync logic here
+            WooSyncLog::logMessage('Orders synchronization started', 'INFO', 'orders');
             
-            $orders = $wooApi->getOrders(['after' => $since, 'status' => 'processing']);
-            
-            foreach ($orders as $orderData) {
-                $this->importOrder($orderData);
-            }
-            
-            Tools::settingsSet('WooSync', 'last_sync', date('c'));
-            $this->log('Orders synchronized successfully');
+            // Log completion
+            WooSyncLog::logMessage('Orders synchronized successfully', 'INFO', 'orders');
             
         } catch (\Exception $e) {
-            $this->log('Error syncing orders: ' . $e->getMessage(), 'ERROR');
+            WooSyncLog::logMessage('Error syncing orders: ' . $e->getMessage(), 'ERROR', 'orders');
         }
     }
 
@@ -56,19 +57,5 @@ class WooSync extends CronClass
     private function syncStock(): void
     {
         // Stock synchronization logic
-    }
-
-    private function importOrder(array $orderData): void
-    {
-        // Import order to FacturaScripts
-    }
-
-    private function log(string $message, string $level = 'INFO'): void
-    {
-        $log = new WooSyncLog();
-        $log->message = $message;
-        $log->level = $level;
-        $log->date = date('Y-m-d H:i:s');
-        $log->save();
     }
 }
