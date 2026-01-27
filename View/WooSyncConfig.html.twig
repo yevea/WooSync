@@ -1,30 +1,61 @@
 {% extends "Master/MenuTemplate.html.twig" %}
 
 {% block body %}
-    <div class="container">
-        <h1>WooSync Configuration</h1>
-        <form method="post">
-            <input type="hidden" name="action" value="save-config">
-            <div class="form-group">
-                <label>WooCommerce URL</label>
-                <input type="text" name="wc_url" value="{{ fsc.views.EditWooSyncConfig.model.wc_url }}" class="form-control" placeholder="https://yourstore.com">
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-sync-alt fa-fw"></i> WooSync Configuration
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if app.request.query.has('ok') %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> Settings saved successfully.
+                    </div>
+                    {% endif %}
+                    
+                    <form method="post" action="{{ fsc.url() }}">
+                        <input type="hidden" name="action" value="save">
+                        
+                        <div class="form-group">
+                            <label for="woocommerce_url">WooCommerce Store URL</label>
+                            <input type="url" id="woocommerce_url" name="woocommerce_url" 
+                                   class="form-control" 
+                                   value="{{ fsc.getSetting('WooSync', 'woocommerce_url', '') }}"
+                                   placeholder="https://yourstore.com" required>
+                            <small class="form-text text-muted">Enter your WooCommerce store URL</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="woocommerce_key">Consumer Key</label>
+                            <input type="text" id="woocommerce_key" name="woocommerce_key" 
+                                   class="form-control" 
+                                   value="{{ fsc.getSetting('WooSync', 'woocommerce_key', '') }}"
+                                   required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="woocommerce_secret">Consumer Secret</label>
+                            <input type="password" id="woocommerce_secret" name="woocommerce_secret" 
+                                   class="form-control" 
+                                   value="{{ fsc.getSetting('WooSync', 'woocommerce_secret', '') }}"
+                                   required>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save fa-fw"></i> Save Settings
+                        </button>
+                        
+                        <a href="{{ fsc.url() }}" class="btn btn-secondary">
+                            <i class="fas fa-times fa-fw"></i> Cancel
+                        </a>
+                    </form>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Consumer Key</label>
-                <input type="text" name="wc_key" value="{{ fsc.views.EditWooSyncConfig.model.wc_key }}" class="form-control">
-            </div>
-            <div class="form-group">
-                <label>Consumer Secret</label>
-                <input type="text" name="wc_secret" value="{{ fsc.views.EditWooSyncConfig.model.wc_secret }}" class="form-control">
-            </div>
-            <button type="submit" class="btn btn-primary">Save Configuration</button>
-        </form>
-
-        <hr>
-
-        <form method="post">
-            <input type="hidden" name="action" value="sync-now">
-            <button type="submit" class="btn btn-success">Synchronize Now</button>
-        </form>
+        </div>
     </div>
+</div>
 {% endblock %}
