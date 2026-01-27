@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<database>
+    <table name="woosync_logs">
+        <column name="id" type="serial"/>
+        <column name="message" type="text"/>
+        <column name="level" type="character varying(10)"/>
+        <column name="date" type="timestamp" default="CURRENT_TIMESTAMP"/>
+        <column name="type" type="character varying(50)" null="true"/>
+        <column name="reference" type="character varying(50)" null="true"/>
+        <constraint name="woosync_logs_pkey" type="PRIMARY KEY">
+            <column name="id"/>
+        </constraint>
+        <check name="woosync_logs_level_check">
+            <column name="level"/>
+            <operator>IN</operator>
+            <value>('INFO', 'WARNING', 'ERROR', 'DEBUG')</value>
+        </check>
+    </table>
+</database>
