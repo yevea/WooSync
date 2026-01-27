@@ -87,13 +87,24 @@ class WooCommerceAPI
         return $data ?? [];
     }
 
-    public function testConnection(): bool|string
-    {
-        try {
-            $this->getOrders(['per_page' => 1]);
-            return true;
-        } catch (\Exception $e) {
-            return $e->getMessage();
-        }
+   public function testConnection(): bool
+{
+    try {
+        $result = $this->getProducts(['per_page' => 1]);
+        return is_array($result) && (isset($result[0]) || empty($result));
+    } catch (\Exception $e) {
+        Tools::log()->error('WooCommerce API Test Error: ' . $e->getMessage());
+        return false;
     }
+}
+
+public function getOrders(array $params = []): array
+{
+    return $this->request('GET', '/wp-json/wc/v3/orders', $params);
+}
+
+public function getProducts(array $params = []): array
+{
+    return $this->request('GET', '/wp-json/wc/v3/products', $params);
+}
 }
