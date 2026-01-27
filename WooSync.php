@@ -1,24 +1,74 @@
 <?php
+/**
+ * WooSync - WooCommerce Synchronization Plugin for FacturaScripts
+ */
+
 namespace FacturaScripts\Plugins\WooSync;
 
-use FacturaScripts\Core\Base\Menu\MenuItem;
-use FacturaScripts\Core\Base\PluginManager;
-use FacturaScripts\Core\PluginAbstract;
+use FacturaScripts\Core\Base\CronClass;
+use FacturaScripts\Core\Base\DataBase\DataBaseWhere;
+use FacturaScripts\Core\Tools;
+use FacturaScripts\Plugins\WooSync\Model\WooSyncLog;
 
-/**
- * Clase principal del plugin WooSync.
- */
-class Plugin extends PluginAbstract
+class WooSync extends CronClass
 {
-    public function init()
+    public function __construct()
     {
-        // Añade entrada al menú "Herramientas"
-        $menuManager = PluginManager::getMenuManager();
-        $menuManager->addItem('tools', new MenuItem('WooSyncConfig', 'WooSync', 'fas fa-sync-alt'));
+        // Set cron execution time (every 5 minutes)
+        $this->setPeriod(300);
     }
 
-    public function update()
+    public function run()
     {
-        // Código para actualizaciones futuras, como crear tablas si es necesario.
+        // Execute synchronization if enabled
+        if (Tools::settings('WooSync', 'enable_auto_sync', false)) {
+            $this->syncOrders();
+            $this->syncProducts();
+            $this->syncStock();
+        }
+    }
+
+    private function syncOrders()
+    {
+        try {
+            $wooApi = new Lib\WooCommerceAPI();
+            $since = Tools::settings('WooSync', 'last_sync', '2023-01-01T00:00:00');
+            
+            $orders = $wooApi->getOrders(['after' => $since, 'status' => 'processing']);
+            
+            foreach ($orders as $orderData) {
+                $this->importOrder($orderData);
+            }
+            
+            Tools::settingsSet('WooSync', 'last_sync', date('c'));
+            $this->log('Orders synchronized successfully');
+            
+        } catch (\Exception $e) {
+            $this->log('Error syncing orders: ' . $e->getMessage(), 'ERROR');
+        }
+    }
+
+    private function syncProducts()
+    {
+        // Product synchronization logic
+    }
+
+    private function syncStock()
+    {
+        // Stock synchronization logic
+    }
+
+    private function importOrder(array $orderData)
+    {
+        // Import order to FacturaScripts
+    }
+
+    private function log(string $message, string $level = 'INFO')
+    {
+        $log = new WooSyncLog();
+        $log->message = $message;
+        $log->level = $level;
+        $log->date = date('Y-m-d H:i:s');
+        $log->save();
     }
 }
