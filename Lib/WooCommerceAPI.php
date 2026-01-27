@@ -13,9 +13,9 @@ class WooCommerceAPI
 
     public function __construct()
     {
-        $this->url = Tools::settings('WooSync', 'woocommerce_url');
-        $this->consumerKey = Tools::settings('WooSync', 'woocommerce_key');
-        $this->consumerSecret = Tools::settings('WooSync', 'woocommerce_secret');
+        $this->url = Tools::settings('WooSync', 'woocommerce_url', '');
+        $this->consumerKey = Tools::settings('WooSync', 'woocommerce_key', '');
+        $this->consumerSecret = Tools::settings('WooSync', 'woocommerce_secret', '');
         $this->verifySSL = Tools::settings('WooSync', 'verify_ssl', false);
     }
 
@@ -23,7 +23,7 @@ class WooCommerceAPI
     {
         try {
             $result = $this->getProducts(['per_page' => 1]);
-            return is_array($result) && (isset($result[0]) || empty($result));
+            return is_array($result);
         } catch (\Exception $e) {
             Tools::log()->error('WooCommerce API Test Error: ' . $e->getMessage());
             return false;
