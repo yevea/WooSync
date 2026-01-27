@@ -44,13 +44,16 @@ class WooSyncConfig extends Controller
         Tools::settingsSet('WooSync', 'woocommerce_secret', $secret);
         
         Tools::log()->info('WooSync settings saved');
-        $this->toolBox()->i18nLog()->info('settings-saved');
+        
+        // Show success message (using i18n if needed, or simple message)
+        $this->dataBase->close();
+        Tools::flash()->success('Settings saved successfully');
         
         // Redirect to avoid form resubmission
-        $this->redirect($this->url());
+        $this->redirect($this->url() . '?ok=1');
     }
 
-    // REMOVE the createViews() method or make it empty
+    // Keep createViews() empty or remove it
     protected function createViews(): void
     {
         // Empty - we're not using ExtendedController views
