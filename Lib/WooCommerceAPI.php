@@ -19,6 +19,17 @@ class WooCommerceAPI
         $this->verifySSL = Tools::settings('WooSync', 'verify_ssl', false);
     }
 
+    public function testConnection(): bool
+    {
+        try {
+            $result = $this->getProducts(['per_page' => 1]);
+            return is_array($result) && (isset($result[0]) || empty($result));
+        } catch (\Exception $e) {
+            Tools::log()->error('WooCommerce API Test Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     public function getOrders(array $params = []): array
     {
         return $this->request('GET', '/wp-json/wc/v3/orders', $params);
@@ -41,23 +52,23 @@ class WooCommerceAPI
 
     private function request(string $method, string $endpoint, array $params = []): array
     {
+        if (empty($this->url) || empty($this->consumerKey) || empty($this->consumerSecret)) {
+            throw new \Exception('WooCommerce API is not configured');
+        }
+
         $url = rtrim($this->url, '/') . $endpoint;
         
-        // Add authentication
-        $params['consumer_key'] = $this->consumerKey;
-        $params['consumer_secret'] = $this->consumerSecret;
+        // Add authentication for WooCommerce v3 REST API
+        $url .= '?' . http_build_query([
+            'consumer_key' => $this->consumerKey,
+            'consumer_secret' => $this->consumerSecret
+        ]);
+        
+        if ($method === 'GET' && !empty($params)) {
+            $url .= '&' . http_build_query($params);
+        }
         
         $ch = curl_init();
-        
-        if ($method === 'GET') {
-            $url .= '?' . http_build_query($params);
-        } else {
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params));
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'Content-Type: application/json',
-                'Content-Length: ' . strlen(json_encode($params))
-            ]);
-        }
         
         curl_setopt_array($ch, [
             CURLOPT_URL => $url,
@@ -67,6 +78,14 @@ class WooCommerceAPI
             CURLOPT_SSL_VERIFYPEER => $this->verifySSL,
             CURLOPT_SSL_VERIFYHOST => $this->verifySSL ? 2 : 0,
         ]);
+        
+        if ($method !== 'GET') {
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Content-Type: application/json',
+                'Content-Length: ' . strlen(json_encode($params))
+            ]);
+        }
         
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -81,30 +100,9 @@ class WooCommerceAPI
         
         if ($httpCode >= 400) {
             $message = $data['message'] ?? 'Unknown error';
-            throw new \Exception("API Error {$httpCode}: {$message}");
+            throw new \Exception("WooCommerce API Error {$httpCode}: {$message}");
         }
         
         return $data ?? [];
     }
-
-   public function testConnection(): bool
-{
-    try {
-        $result = $this->getProducts(['per_page' => 1]);
-        return is_array($result) && (isset($result[0]) || empty($result));
-    } catch (\Exception $e) {
-        Tools::log()->error('WooCommerce API Test Error: ' . $e->getMessage());
-        return false;
-    }
-}
-
-public function getOrders(array $params = []): array
-{
-    return $this->request('GET', '/wp-json/wc/v3/orders', $params);
-}
-
-public function getProducts(array $params = []): array
-{
-    return $this->request('GET', '/wp-json/wc/v3/products', $params);
-}
 }
