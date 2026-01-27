@@ -19,17 +19,17 @@ class WooCommerceAPI
         $this->verifySSL = Tools::settings('WooSync', 'verify_ssl', false);
     }
 
-    public function getOrders(array $params = [])
+    public function getOrders(array $params = []): array
     {
         return $this->request('GET', '/wp-json/wc/v3/orders', $params);
     }
 
-    public function getProducts(array $params = [])
+    public function getProducts(array $params = []): array
     {
         return $this->request('GET', '/wp-json/wc/v3/products', $params);
     }
 
-    public function updateProductStock($productId, $stockQuantity)
+    public function updateProductStock($productId, $stockQuantity): array
     {
         $data = [
             'stock_quantity' => $stockQuantity,
@@ -39,7 +39,7 @@ class WooCommerceAPI
         return $this->request('PUT', "/wp-json/wc/v3/products/{$productId}", $data);
     }
 
-    private function request($method, $endpoint, $params = [])
+    private function request(string $method, string $endpoint, array $params = []): array
     {
         $url = rtrim($this->url, '/') . $endpoint;
         
@@ -84,10 +84,10 @@ class WooCommerceAPI
             throw new \Exception("API Error {$httpCode}: {$message}");
         }
         
-        return $data;
+        return $data ?? [];
     }
 
-    public function testConnection()
+    public function testConnection(): bool|string
     {
         try {
             $this->getOrders(['per_page' => 1]);
