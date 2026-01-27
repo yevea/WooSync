@@ -19,7 +19,7 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <!-- Success Message -->
+                    <!-- Success Message from Save -->
                     {% if app.request.query.has('saved') and app.request.query.get('saved') == '1' %}
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
                             <i class="fas fa-check-circle"></i> 
@@ -30,6 +30,35 @@
                         </div>
                     {% endif %}
                     
+                    <!-- Query Parameter Messages (for test/sync actions) -->
+                    {% if app.request.query.has('message') and app.request.query.has('type') %}
+                        {% set message = app.request.query.get('message') %}
+                        {% set type = app.request.query.get('type') %}
+                        
+                        {% if type == 'success' %}
+                            {% set alert_class = 'alert-success' %}
+                            {% set icon = 'fas fa-check-circle' %}
+                        {% elseif type == 'error' %}
+                            {% set alert_class = 'alert-danger' %}
+                            {% set icon = 'fas fa-exclamation-circle' %}
+                        {% elseif type == 'info' %}
+                            {% set alert_class = 'alert-info' %}
+                            {% set icon = 'fas fa-info-circle' %}
+                        {% else %}
+                            {% set alert_class = 'alert-warning' %}
+                            {% set icon = 'fas fa-exclamation-triangle' %}
+                        {% endif %}
+                        
+                        <div class="alert {{ alert_class }} alert-dismissible fade show" role="alert">
+                            <i class="{{ icon }}"></i> 
+                            {{ message|raw }}
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Current Configuration Info -->
                     {% if fsc.woocommerce_url %}
                         <div class="alert alert-info mb-4">
                             <i class="fas fa-info-circle"></i> 
@@ -42,6 +71,7 @@
                         </div>
                     {% endif %}
                     
+                    <!-- Configuration Form -->
                     <form method="post" action="{{ fsc.url() }}">
                         <input type="hidden" name="action" value="save">
                         
@@ -85,17 +115,18 @@
                             </button>
                             
                             {% if fsc.woocommerce_url %}
-                                <a href="{{ fsc.url() }}?action=test" class="btn btn-info ml-2">
+                                <a href="{{ fsc.url() }}?action=test" class="btn btn-info ml-2" onclick="return confirm('Test connection with current settings?')">
                                     <i class="fas fa-plug fa-fw"></i> Test Connection
                                 </a>
                                 
-                                <a href="{{ fsc.url() }}?action=sync" class="btn btn-success ml-2">
+                                <a href="{{ fsc.url() }}?action=sync" class="btn btn-success ml-2" onclick="return confirm('Start full synchronization?')">
                                     <i class="fas fa-sync-alt fa-fw"></i> Sync Now
                                 </a>
                             {% endif %}
                         </div>
                     </form>
                     
+                    <!-- Sync Options Section -->
                     {% if fsc.woocommerce_url %}
                         <hr class="my-4">
                         <div class="card border-success">
@@ -104,79 +135,82 @@
                             </div>
                             <div class="card-body">
                                 <div class="row">
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
                                         <h6><i class="fas fa-shopping-cart fa-fw"></i> Order Sync</h6>
-                                        <p>Synchronize WooCommerce orders to FacturaScripts:</p>
+                                        <p class="small">Import WooCommerce orders to FacturaScripts:</p>
                                         <ul class="small">
                                             <li>Import new orders as customers</li>
                                             <li>Create invoices from orders</li>
                                             <li>Update order status</li>
                                         </ul>
+                                        <a href="{{ fsc.url() }}?action=sync-orders" class="btn btn-outline-primary btn-sm" onclick="return confirm('Import orders from WooCommerce?')">
+                                            <i class="fas fa-download fa-fw"></i> Import Orders
+                                        </a>
                                     </div>
-                                    <div class="col-md-6">
+                                    
+                                    <div class="col-md-4">
                                         <h6><i class="fas fa-cubes fa-fw"></i> Product Sync</h6>
-                                        <p>Synchronize products between systems:</p>
+                                        <p class="small">Synchronize products between systems:</p>
                                         <ul class="small">
                                             <li>Import WooCommerce products</li>
                                             <li>Sync stock quantities</li>
                                             <li>Update prices</li>
                                         </ul>
-                                    </div>
-                                </div>
-                                <div class="text-center mt-3">
-                                    <div class="btn-group">
-                                        <a href="{{ fsc.url() }}?action=sync-orders" class="btn btn-outline-primary">
-                                            <i class="fas fa-download fa-fw"></i> Import Orders
-                                        </a>
-                                        <a href="{{ fsc.url() }}?action=sync-products" class="btn btn-outline-primary">
+                                        <a href="{{ fsc.url() }}?action=sync-products" class="btn btn-outline-primary btn-sm" onclick="return confirm('Sync products from WooCommerce?')">
                                             <i class="fas fa-exchange-alt fa-fw"></i> Sync Products
                                         </a>
-                                        <a href="{{ fsc.url() }}?action=sync-stock" class="btn btn-outline-primary">
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <h6><i class="fas fa-boxes fa-fw"></i> Stock Sync</h6>
+                                        <p class="small">Update stock levels:</p>
+                                        <ul class="small">
+                                            <li>Sync stock quantities</li>
+                                            <li>Update inventory levels</li>
+                                            <li>Manage low stock alerts</li>
+                                        </ul>
+                                        <a href="{{ fsc.url() }}?action=sync-stock" class="btn btn-outline-primary btn-sm" onclick="return confirm('Update stock levels?')">
                                             <i class="fas fa-boxes fa-fw"></i> Update Stock
                                         </a>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-4">
+                                    <h6><i class="fas fa-history fa-fw"></i> Sync History</h6>
+                                    <p class="small text-muted mb-1">Last sync: Never</p>
+                                    <p class="small text-muted">Total orders synced: 0 | Total products synced: 0</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- API Information -->
+                        <div class="card border-info mt-4">
+                            <div class="card-header bg-info text-white">
+                                <i class="fas fa-code fa-fw"></i> API Information
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6>WooCommerce API Status</h6>
+                                        <ul class="small">
+                                            <li>API Version: v3</li>
+                                            <li>Connection: {% if fsc.woocommerce_url %}Configured{% else %}Not configured{% endif %}</li>
+                                            <li>URL: <code>{{ fsc.woocommerce_url }}</code></li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Next Steps</h6>
+                                        <ol class="small">
+                                            <li>Test the connection</li>
+                                            <li>Configure sync settings</li>
+                                            <li>Run a test sync</li>
+                                            <li>Set up automatic sync</li>
+                                        </ol>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     {% endif %}
-
-<!-- Flash Messages -->
-{% if app.session.flashbag.peekAll|length > 0 %}
-    {% for type, messages in app.session.flashbag.all %}
-        {% for message in messages %}
-            <div class="alert alert-{{ type }} alert-dismissible fade show" role="alert">
-                <i class="fas fa-{{ type == 'success' ? 'check-circle' : (type == 'error' ? 'exclamation-circle' : 'info-circle') }}"></i> 
-                {{ message|raw }}
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-        {% endfor %}
-    {% endfor %}
-{% endif %}
-
-<!-- Session Flash Messages -->
-{% if app.session.flashbag.peekAll|length > 0 %}
-    {% for type, messages in app.session.flashbag.all %}
-        {% for message in messages %}
-            <div class="alert alert-{{ type }} alert-dismissible fade show" role="alert">
-                {% if type == 'success' %}
-                    <i class="fas fa-check-circle"></i>
-                {% elseif type == 'error' %}
-                    <i class="fas fa-exclamation-circle"></i>
-                {% elseif type == 'info' %}
-                    <i class="fas fa-info-circle"></i>
-                {% else %}
-                    <i class="fas fa-exclamation-triangle"></i>
-                {% endif %}
-                {{ message|raw }}
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-        {% endfor %}
-    {% endfor %}
-{% endif %}
                 </div>
             </div>
         </div>
@@ -224,6 +258,27 @@ document.addEventListener('DOMContentLoaded', function() {
             return true;
         });
     }
+    
+    // Add confirmations to sync buttons
+    var syncButtons = document.querySelectorAll('a[href*="action=sync"], a[href*="action=test"]');
+    syncButtons.forEach(function(button) {
+        if (!button.onclick) {
+            var href = button.getAttribute('href');
+            if (href.includes('action=test')) {
+                button.addEventListener('click', function(e) {
+                    if (!confirm('Test connection with current settings?')) {
+                        e.preventDefault();
+                    }
+                });
+            } else if (href.includes('action=sync')) {
+                button.addEventListener('click', function(e) {
+                    if (!confirm('This will synchronize data with WooCommerce. Continue?')) {
+                        e.preventDefault();
+                    }
+                });
+            }
+        }
+    });
 });
 </script>
 {% endblock %}
