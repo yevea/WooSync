@@ -22,15 +22,24 @@ class WooSyncConfig extends Controller
     {
         parent::privateCore($response, $user, $permissions);
         
-        // Debug: Log that we're in the controller
-        Tools::log()->debug('WooSyncConfig: privateCore called');
+        Tools::log()->debug('WooSyncConfig: privateCore called - Method: ' . $this->request->getMethod());
         
-        $action = $this->request->get('action', '');
-        Tools::log()->debug('WooSyncConfig: action = ' . $action);
-        
-        if ($action === 'save') {
-            Tools::log()->debug('WooSyncConfig: Calling saveSettings');
-            $this->saveSettings();
+        // Check if this is a POST request with form submission
+        if ($this->request->getMethod() === 'POST') {
+            $action = $this->request->request->get('action', '');
+            Tools::log()->debug('WooSyncConfig: POST action = ' . $action);
+            
+            if ($action === 'save') {
+                $this->saveSettings();
+                return; // Stop further processing after save
+            }
+        } else {
+            // GET request - check for success parameter
+            $saved = $this->request->query->get('saved', '');
+            if ($saved === '1') {
+                Tools::log()->debug('WooSyncConfig: Showing success message');
+                // Success message will be shown in template
+            }
         }
     }
 
@@ -38,28 +47,31 @@ class WooSyncConfig extends Controller
     {
         Tools::log()->debug('WooSyncConfig: saveSettings called');
         
-        // Get form data
-        $url = $this->request->get('woocommerce_url', '');
-        $key = $this->request->get('woocommerce_key', '');
-        $secret = $this->request->get('woocommerce_secret', '');
+        // Get POST data
+        $url = $this->request->request->get('woocommerce_url', '');
+        $key = $this->request->request->get('woocommerce_key', '');
+        $secret = $this->request->request->get('woocommerce_secret', '');
         
         Tools::log()->debug('WooSyncConfig: URL = ' . $url);
-        Tools::log()->debug('WooSyncConfig: Key = ' . (!empty($key) ? 'SET' : 'EMPTY'));
-        Tools::log()->debug('WooSyncConfig: Secret = ' . (!empty($secret) ? 'SET' : 'EMPTY'));
+        Tools::log()->debug('WooSyncConfig: Key length = ' . strlen($key));
+        Tools::log()->debug('WooSyncConfig: Secret length = ' . strlen($secret));
+        
+        // Validate
+        if (empty($url) || empty($key) || empty($secret)) {
+            Tools::log()->error('WooSyncConfig: Validation failed - empty fields');
+            // Don't redirect - show error on same page
+            return;
+        }
         
         // Save settings
         Tools::settingsSet('WooSync', 'woocommerce_url', $url);
         Tools::settingsSet('WooSync', 'woocommerce_key', $key);
         Tools::settingsSet('WooSync', 'woocommerce_secret', $secret);
         
-        Tools::log()->info('WooSync settings saved');
+        Tools::log()->info('WooSync settings saved: ' . $url);
         
-        // Debug: Verify settings were saved
-        $savedUrl = Tools::settings('WooSync', 'woocommerce_url', 'NOT SAVED');
-        Tools::log()->debug('WooSyncConfig: Verify URL saved = ' . $savedUrl);
-        
-        // Redirect with success parameter
-        Tools::log()->debug('WooSyncConfig: Redirecting...');
+        // Redirect to show success message
+        Tools::log()->debug('WooSyncConfig: Redirecting to success page');
         $this->redirect($this->url() . '?saved=1');
     }
 
