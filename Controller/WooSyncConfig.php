@@ -39,21 +39,24 @@ class WooSyncConfig extends Controller
         $key = $this->request->get('woocommerce_key', '');
         $secret = $this->request->get('woocommerce_secret', '');
         
+        // Validate inputs
+        if (empty($url) || empty($key) || empty($secret)) {
+            Tools::log()->warning('WooSync: Missing required settings');
+            // You could add error handling here
+            return;
+        }
+        
         Tools::settingsSet('WooSync', 'woocommerce_url', $url);
         Tools::settingsSet('WooSync', 'woocommerce_key', $key);
         Tools::settingsSet('WooSync', 'woocommerce_secret', $secret);
         
         Tools::log()->info('WooSync settings saved');
         
-        // Show success message (using i18n if needed, or simple message)
-        $this->dataBase->close();
-        Tools::flash()->success('Settings saved successfully');
-        
-        // Redirect to avoid form resubmission
-        $this->redirect($this->url() . '?ok=1');
+        // Simple approach: Use query parameter for success message
+        // Redirect to show success
+        $this->redirect($this->url() . '?saved=1');
     }
 
-    // Keep createViews() empty or remove it
     protected function createViews(): void
     {
         // Empty - we're not using ExtendedController views
