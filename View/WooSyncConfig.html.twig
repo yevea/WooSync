@@ -11,10 +11,15 @@
                     </h6>
                 </div>
                 <div class="card-body">
-                    {% if app.request.query.has('ok') %}
-                    <div class="alert alert-success">
-                        <i class="fas fa-check-circle"></i> Settings saved successfully.
-                    </div>
+                    {% if app.session.flashbag.has('success') %}
+                        {% for message in app.session.flashbag.get('success') %}
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <i class="fas fa-check-circle"></i> {{ message }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        {% endfor %}
                     {% endif %}
                     
                     <form method="post" action="{{ fsc.url() }}">
