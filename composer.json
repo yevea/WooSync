@@ -1,0 +1,13 @@
+{
+    "name": "facturascripts/woosync",
+    "description": "WooCommerce synchronization plugin for FacturaScripts",
+    "type": "project",
+    "require": {
+        "php": ">=7.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "FacturaScripts\\Plugins\\WooSync\\": "./"
+        }
+    }
+}
