@@ -1,8 +1,4 @@
 <?php
-/**
- * WooSync Configuration Controller
- */
-
 namespace FacturaScripts\Plugins\WooSync\Controller;
 
 use FacturaScripts\Core\Base\Controller;
@@ -39,26 +35,18 @@ class WooSyncConfig extends Controller
         $key = $this->request->get('woocommerce_key', '');
         $secret = $this->request->get('woocommerce_secret', '');
         
-        // Validate inputs
-        if (empty($url) || empty($key) || empty($secret)) {
-            Tools::log()->warning('WooSync: Missing required settings');
-            // You could add error handling here
-            return;
-        }
-        
         Tools::settingsSet('WooSync', 'woocommerce_url', $url);
         Tools::settingsSet('WooSync', 'woocommerce_key', $key);
         Tools::settingsSet('WooSync', 'woocommerce_secret', $secret);
         
         Tools::log()->info('WooSync settings saved');
         
-        // Simple approach: Use query parameter for success message
-        // Redirect to show success
+        // Redirect with success parameter
         $this->redirect($this->url() . '?saved=1');
     }
 
     protected function createViews(): void
     {
-        // Empty - we're not using ExtendedController views
+        // Empty
     }
 }
