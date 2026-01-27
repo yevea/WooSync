@@ -3,14 +3,30 @@
 {% block body %}
 <div class="container-fluid">
     <div class="row">
-        <div class="col-lg-6">
+        <div class="col-lg-8">
             <div class="card shadow mb-4">
-                <div class="card-header py-3">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h6 class="m-0 font-weight-bold text-primary">
                         <i class="fas fa-sync-alt fa-fw"></i> WooSync Configuration
                     </h6>
+                    <div class="small">
+                        Current settings loaded: 
+                        {% if fsc.getSetting('WooSync', 'woocommerce_url', '') %}
+                            <span class="badge badge-success">Configured</span>
+                        {% else %}
+                            <span class="badge badge-warning">Not configured</span>
+                        {% endif %}
+                    </div>
                 </div>
                 <div class="card-body">
+                    <!-- Debug info - remove after testing -->
+                    <div class="alert alert-info small mb-4">
+                        <i class="fas fa-bug fa-fw"></i> <strong>Debug Info:</strong><br>
+                        Form submitted: {{ app.request.method }}<br>
+                        Action parameter: {{ app.request.get('action') ?: 'none' }}<br>
+                        Current URL setting: <code>{{ fsc.getSetting('WooSync', 'woocommerce_url', 'EMPTY') }}</code>
+                    </div>
+                    
                     {% if app.request.query.has('saved') %}
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
                             <i class="fas fa-check-circle"></i> Settings saved successfully!
@@ -20,19 +36,33 @@
                         </div>
                     {% endif %}
                     
+                    {% if app.session.flashbag.has('error') %}
+                        {% for message in app.session.flashbag.get('error') %}
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="fas fa-exclamation-circle"></i> {{ message }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
                     <form method="post" action="{{ fsc.url() }}">
                         <input type="hidden" name="action" value="save">
                         
                         <div class="form-group">
-                            <label for="woocommerce_url">WooCommerce Store URL</label>
+                            <label for="woocommerce_url">WooCommerce Store URL *</label>
                             <input type="url" id="woocommerce_url" name="woocommerce_url" 
                                    class="form-control" 
                                    value="{{ fsc.getSetting('WooSync', 'woocommerce_url', '') }}"
                                    placeholder="https://yourstore.com" required>
+                            <small class="form-text text-muted">
+                                Must start with https:// and have no trailing slash
+                            </small>
                         </div>
                         
                         <div class="form-group">
-                            <label for="woocommerce_key">Consumer Key</label>
+                            <label for="woocommerce_key">Consumer Key *</label>
                             <input type="text" id="woocommerce_key" name="woocommerce_key" 
                                    class="form-control" 
                                    value="{{ fsc.getSetting('WooSync', 'woocommerce_key', '') }}"
@@ -40,20 +70,72 @@
                         </div>
                         
                         <div class="form-group">
-                            <label for="woocommerce_secret">Consumer Secret</label>
+                            <label for="woocommerce_secret">Consumer Secret *</label>
                             <input type="password" id="woocommerce_secret" name="woocommerce_secret" 
                                    class="form-control" 
                                    value="{{ fsc.getSetting('WooSync', 'woocommerce_secret', '') }}"
                                    required>
                         </div>
                         
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save fa-fw"></i> Save Settings
-                        </button>
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save fa-fw"></i> Save Settings
+                            </button>
+                            
+                            <button type="reset" class="btn btn-secondary ml-2">
+                                <i class="fas fa-undo fa-fw"></i> Reset Form
+                            </button>
+                            
+                            <a href="{{ fsc.url() }}" class="btn btn-light ml-2">
+                                <i class="fas fa-times fa-fw"></i> Cancel
+                            </a>
+                        </div>
                     </form>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title"><i class="fas fa-question-circle fa-fw"></i> Need Help?</h6>
+                            <p class="card-text small mb-1"><strong>To get API credentials:</strong></p>
+                            <ol class="small pl-3 mb-0">
+                                <li>Login to your WooCommerce admin</li>
+                                <li>Go to: WooCommerce → Settings → Advanced → REST API</li>
+                                <li>Click "Add Key" button</li>
+                                <li>Give it a description like "FacturaScripts Sync"</li>
+                                <li>Set User permissions to an administrator</li>
+                                <li>Set Permissions to "Read/Write"</li>
+                                <li>Click "Generate API Key"</li>
+                                <li>Copy the Consumer Key and Consumer Secret</li>
+                            </ol>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+// Simple form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    var url = document.getElementById('woocommerce_url').value;
+    var key = document.getElementById('woocommerce_key').value;
+    var secret = document.getElementById('woocommerce_secret').value;
+    
+    if (!url || !key || !secret) {
+        e.preventDefault();
+        alert('Please fill in all required fields');
+        return false;
+    }
+    
+    if (!url.startsWith('https://')) {
+        e.preventDefault();
+        alert('URL must start with https://');
+        return false;
+    }
+    
+    return true;
+});
+</script>
 {% endblock %}
