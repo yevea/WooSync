@@ -4,12 +4,11 @@ namespace FacturaScripts\Plugins\WooSync\Controller;
 use FacturaScripts\Core\Base\Controller;
 use FacturaScripts\Core\Base\ControllerPermissions;
 use FacturaScripts\Plugins\WooSync\Lib\WooCommerceAPI;
-use FacturaScripts\Core\Tools;
 use Symfony\Component\HttpFoundation\Response;
 
 class WooSyncSettings extends Controller
 {
-    public function getPageData(): array
+    public function getPageData(): array  // ADDED: array
     {
         $pageData = parent::getPageData();
         $pageData['title'] = 'WooSync Settings';
@@ -18,7 +17,7 @@ class WooSyncSettings extends Controller
         return $pageData;
     }
 
-    public function privateCore(&$response, $user, $permissions): void
+    public function privateCore(&$response, $user, $permissions): void  // ADDED: void
     {
         parent::privateCore($response, $user, $permissions);
         
@@ -39,28 +38,24 @@ class WooSyncSettings extends Controller
         }
     }
 
-    private function testConnection(): void
+    private function testConnection(): void  // ADDED: void
     {
-        try {
-            $wooApi = new WooCommerceAPI();
-            $result = $wooApi->testConnection();
-            
-            if ($result === true) {
-                Tools::log()->info('Connection to WooCommerce successful');
-            } else {
-                Tools::log()->error('Connection failed: ' . $result);
-            }
-        } catch (\Exception $e) {
-            Tools::log()->error('Connection test error: ' . $e->getMessage());
+        $wooApi = new WooCommerceAPI();
+        $result = $wooApi->testConnection();
+        
+        if ($result === true) {
+            $this->toolBox()->i18nLog()->info('Connection successful');
+        } else {
+            $this->toolBox()->i18nLog()->error('Connection failed: ' . $result);
         }
     }
 
-    private function saveSettings(): void
+    private function saveSettings(): void  // ADDED: void
     {
         $settings = [
-            'woocommerce_url' => $this->request->get('woocommerce_url', ''),
-            'woocommerce_key' => $this->request->get('woocommerce_key', ''),
-            'woocommerce_secret' => $this->request->get('woocommerce_secret', ''),
+            'woocommerce_url' => $this->request->get('woocommerce_url'),
+            'woocommerce_key' => $this->request->get('woocommerce_key'),
+            'woocommerce_secret' => $this->request->get('woocommerce_secret'),
             'enable_auto_sync' => $this->request->get('enable_auto_sync', false),
             'sync_products' => $this->request->get('sync_products', false),
             'sync_stock' => $this->request->get('sync_stock', false),
@@ -68,40 +63,15 @@ class WooSyncSettings extends Controller
         ];
         
         foreach ($settings as $key => $value) {
-            Tools::settingsSet('WooSync', $key, $value);
+            \FacturaScripts\Core\Tools::settingsSet('WooSync', $key, $value);
         }
         
-        Tools::log()->info('WooSync settings saved');
-        $this->toolBox()->i18nLog()->info('settings-saved');
+        $this->toolBox()->i18nLog()->info('Settings saved');
     }
 
-    private function manualSync(): void
+    private function manualSync(): void  // ADDED: void
     {
         // Manual synchronization logic
-        Tools::log()->info('Manual synchronization started');
-        
-        // You would call your sync methods here
-        // $wooApi = new WooCommerceAPI();
-        // $wooApi->syncOrders();
-        // etc.
-        
-        $this->toolBox()->i18nLog()->info('Manual synchronization completed');
-    }
-
-    protected function createViews(): void
-    {
-        // Create settings view
-        $this->addHtmlView('WooSyncSettings', 'WooSyncSettings.html.twig', 'WooSyncSettings');
-    }
-
-    protected function execAfterAction(string $action): void
-    {
-        switch ($action) {
-            case 'test-connection':
-            case 'save-settings':
-            case 'sync-now':
-                $this->redirect($this->url() . '?code=' . $this->request->get('code'));
-                break;
-        }
+        $this->toolBox()->i18nLog()->info('Manual sync started');
     }
 }
