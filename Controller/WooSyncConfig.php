@@ -8,6 +8,9 @@ use Symfony\Component\HttpFoundation\Response;
 
 class WooSyncConfig extends Controller
 {
+    // Track if we just saved settings
+    private $justSaved = false;
+    
     public function getPageData(): array
     {
         $pageData = parent::getPageData();
@@ -26,7 +29,13 @@ class WooSyncConfig extends Controller
         
         // Process form submission
         if ($this->request->request->get('action') === 'save') {
-            $this->saveSettings();
+            $success = $this->saveSettings();
+            if ($success) {
+                $this->justSaved = true;
+                // Redirect immediately after successful save
+                $this->redirect($this->url() . '?saved=1');
+                return;
+            }
         }
     }
 
@@ -56,21 +65,10 @@ class WooSyncConfig extends Controller
         
         Tools::log()->info('WooSync settings saved: ' . $url);
         
-        // Verify save
-        $savedUrl = Tools::settings('WooSync', 'woocommerce_url', '');
-        Tools::log()->debug('WooSyncConfig: Verified URL = ' . $savedUrl);
+        // Force immediate save
+        $this->dataBase->commit();
         
         return true;
-    }
-
-    protected function execAfterAction(string $action): void
-    {
-        Tools::log()->debug('WooSyncConfig: execAfterAction called with action: ' . $action);
-        
-        if ($action === 'save') {
-            // Settings were saved, redirect to show success
-            $this->redirect($this->url() . '?saved=1');
-        }
     }
 
     protected function createViews(): void
