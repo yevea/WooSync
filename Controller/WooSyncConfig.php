@@ -172,10 +172,8 @@ class WooSyncConfig extends Controller
             $this->redirect($this->url() . '?error=' . urlencode('Order sync error: ' . $e->getMessage()));
         }
     }
-    <?php
-// (only the syncProducts method; keep the rest of the file as-is)
 
-private function syncProducts(): void
+    private function syncProducts(): void
 {
     Tools::log()->info('WooSync: Starting product synchronization');
 
