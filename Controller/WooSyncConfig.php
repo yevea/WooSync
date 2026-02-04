@@ -172,39 +172,49 @@ class WooSyncConfig extends Controller
             $this->redirect($this->url() . '?error=' . urlencode('Order sync error: ' . $e->getMessage()));
         }
     }
-    
-    private function syncProducts(): void
-    {
-        Tools::log()->info('WooSync: Starting product synchronization');
-        
-        if (empty($this->woocommerce_url) || empty($this->woocommerce_key) || empty($this->woocommerce_secret)) {
-            $this->redirect($this->url() . '?error=' . urlencode('Please configure WooCommerce settings first.'));
-            return;
-        }
-        
-        try {
-            $wooApi = new \FacturaScripts\Plugins\WooSync\Lib\WooCommerceAPI();
-            
-            $products = $wooApi->getProducts(['per_page' => 5]);
-            $count = is_array($products) ? count($products) : 0;
-            
-            Tools::log()->info("WooSync: Found {$count} products");
-            $this->redirect($this->url() . '?success=' . urlencode("Found {$count} products. Product sync needs implementation."));
-            
-        } catch (\Exception $e) {
-            Tools::log()->error('WooSync: Product sync error: ' . $e->getMessage());
-            $this->redirect($this->url() . '?error=' . urlencode('Product sync error: ' . $e->getMessage()));
-        }
+    <?php
+// (only the syncProducts method; keep the rest of the file as-is)
+
+private function syncProducts(): void
+{
+    Tools::log()->info('WooSync: Starting product synchronization');
+
+    if (empty($this->woocommerce_url) || empty($this->woocommerce_key) || empty($this->woocommerce_secret)) {
+        $this->redirect($this->url() . '?error=' . urlencode('Please configure WooCommerce settings first.'));
+        return;
     }
-    
-    private function syncStock(): void
-    {
-        Tools::log()->info('WooSync: Starting stock synchronization');
-        $this->redirect($this->url() . '?info=' . urlencode('Stock sync needs implementation.'));
-    }
-    
-    protected function createViews(): void
-    {
-        // Empty
+
+    try {
+        $wooApi = new \FacturaScripts\Plugins\WooSync\Lib\WooCommerceAPI();
+
+        $products = $wooApi->getProducts(['per_page' => 50]);
+        $count = is_array($products) ? count($products) : 0;
+
+        Tools::log()->info("WooSync: Found {$count} products");
+
+        // Save a log entry per product to verify the content & mapping
+        foreach ($products as $p) {
+            try {
+                $log = new \FacturaScripts\Plugins\WooSync\Model\WooSyncLog();
+                $log->message = substr(json_encode([
+                    'id' => $p['id'] ?? null,
+                    'sku' => $p['sku'] ?? null,
+                    'name' => $p['name'] ?? null,
+                    'price' => $p['price'] ?? null
+                ], JSON_UNESCAPED_UNICODE), 0, 2000); // avoid very long DB fields
+                $log->level = 'info';
+                $log->type = 'product';
+                $log->reference = (string)($p['id'] ?? '');
+                $log->save();
+            } catch (\Exception $inner) {
+                Tools::log()->error('WooSync: Failed to log product: ' . $inner->getMessage());
+            }
+        }
+
+        $this->redirect($this->url() . '?success=' . urlencode("Found {$count} products. Logged {$count} items (proof of concept)."));
+
+    } catch (\Exception $e) {
+        Tools::log()->error('WooSync: Product sync error: ' . $e->getMessage());
+        $this->redirect($this->url() . '?error=' . urlencode('Product sync error: ' . $e->getMessage()));
     }
 }
