@@ -195,9 +195,9 @@ class WooSyncConfig extends Controller
             try {
                 $log = new \FacturaScripts\Plugins\WooSync\Model\WooSyncLog();
                 $log->message = substr(json_encode([
-                    'id' => $p['id'] ?? null,
-                    'sku' => $p['sku'] ?? null,
-                    'name' => $p['name'] ?? null,
+                    'id'    => $p['id'] ?? null,
+                    'sku'   => $p['sku'] ?? null,
+                    'name'  => $p['name'] ?? null,
                     'price' => $p['price'] ?? null
                 ], JSON_UNESCAPED_UNICODE), 0, 2000); // avoid very long DB fields
                 $log->level = 'info';
