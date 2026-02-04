@@ -13,10 +13,75 @@ class WooCommerceAPI
 
     public function __construct()
     {
-        $this->url = Tools::settings('WooSync', 'woocommerce_url', '');
+        $this->url = rtrim(Tools::settings('WooSync', 'woocommerce_url', ''), '/');
         $this->consumerKey = Tools::settings('WooSync', 'woocommerce_key', '');
         $this->consumerSecret = Tools::settings('WooSync', 'woocommerce_secret', '');
         $this->verifySSL = Tools::settings('WooSync', 'verify_ssl', false);
+    }
+
+    private function request(string $endpoint, array $params = [], string $method = 'GET'): array
+    {
+        if (empty($this->url) || empty($this->consumerKey) || empty($this->consumerSecret)) {
+            throw new \RuntimeException('WooCommerce API credentials are missing.');
+        }
+
+        // Build URL
+        $url = $this->url . $endpoint;
+        // Add auth as query params (works for many WooCommerce configurations)
+        $auth = [
+            'consumer_key' => $this->consumerKey,
+            'consumer_secret' => $this->consumerSecret
+        ];
+        $qs = http_build_query(array_merge($auth, $params));
+        $url = $url . '?' . $qs;
+
+        Tools::log()->debug("WooCommerceAPI request: {$method} {$url}");
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, $this->timeout);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, (bool)$this->verifySSL);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+
+        // Some hosts require a user agent
+        curl_setopt($ch, CURLOPT_USERAGENT, 'FacturaScripts-WooSync/1.0');
+
+        $response = curl_exec($ch);
+        $errNo = curl_errno($ch);
+        $err = curl_error($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($errNo) {
+            Tools::log()->error("WooCommerce API cURL error ({$errNo}): {$err}");
+            throw new \RuntimeException("cURL error: {$err}");
+        }
+
+        if ($httpCode < 200 || $httpCode >= 300) {
+            Tools::log()->error("WooCommerce API HTTP {$httpCode}: {$response}");
+            throw new \RuntimeException("HTTP error {$httpCode}");
+        }
+
+        $decoded = json_decode($response, true);
+        if ($decoded === null && json_last_error() !== JSON_ERROR_NONE) {
+            Tools::log()->error('WooCommerce API JSON decode error: ' . json_last_error_msg());
+            throw new \RuntimeException('Invalid JSON response from WooCommerce');
+        }
+
+        return (array)$decoded;
+    }
+
+    public function getProducts(array $params = []): array
+    {
+        // Endpoint root: /wp-json/wc/v3/products
+        return $this->request('/wp-json/wc/v3/products', $params, 'GET');
+    }
+
+    public function getOrders(array $params = []): array
+    {
+        // Endpoint root: /wp-json/wc/v3/orders
+        return $this->request('/wp-json/wc/v3/orders', $params, 'GET');
     }
 
     public function testConnection(): bool
@@ -28,81 +93,5 @@ class WooCommerceAPI
             Tools::log()->error('WooCommerce API Test Error: ' . $e->getMessage());
             return false;
         }
-    }
-
-    public function getOrders(array $params = []): array
-    {
-        return $this->request('GET', '/wp-json/wc/v3/orders', $params);
-    }
-
-    public function getProducts(array $params = []): array
-    {
-        return $this->request('GET', '/wp-json/wc/v3/products', $params);
-    }
-
-    public function updateProductStock($productId, $stockQuantity): array
-    {
-        $data = [
-            'stock_quantity' => $stockQuantity,
-            'manage_stock' => true
-        ];
-        
-        return $this->request('PUT', "/wp-json/wc/v3/products/{$productId}", $data);
-    }
-
-    private function request(string $method, string $endpoint, array $params = []): array
-    {
-        if (empty($this->url) || empty($this->consumerKey) || empty($this->consumerSecret)) {
-            throw new \Exception('WooCommerce API is not configured');
-        }
-
-        $url = rtrim($this->url, '/') . $endpoint;
-        
-        // Add authentication for WooCommerce v3 REST API
-        $url .= '?' . http_build_query([
-            'consumer_key' => $this->consumerKey,
-            'consumer_secret' => $this->consumerSecret
-        ]);
-        
-        if ($method === 'GET' && !empty($params)) {
-            $url .= '&' . http_build_query($params);
-        }
-        
-        $ch = curl_init();
-        
-        curl_setopt_array($ch, [
-            CURLOPT_URL => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => $this->timeout,
-            CURLOPT_CUSTOMREQUEST => $method,
-            CURLOPT_SSL_VERIFYPEER => $this->verifySSL,
-            CURLOPT_SSL_VERIFYHOST => $this->verifySSL ? 2 : 0,
-        ]);
-        
-        if ($method !== 'GET') {
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params));
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'Content-Type: application/json',
-                'Content-Length: ' . strlen(json_encode($params))
-            ]);
-        }
-        
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = curl_error($ch);
-        curl_close($ch);
-        
-        if ($error) {
-            throw new \Exception('cURL Error: ' . $error);
-        }
-        
-        $data = json_decode($response, true);
-        
-        if ($httpCode >= 400) {
-            $message = $data['message'] ?? 'Unknown error';
-            throw new \Exception("WooCommerce API Error {$httpCode}: {$message}");
-        }
-        
-        return $data ?? [];
     }
 }
