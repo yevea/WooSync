@@ -39,6 +39,21 @@ class WooSyncLog extends ModelClass
     {
         return 'woosync_logs';
     }
+    
+    public function install(): string
+    {
+        return 'CREATE TABLE IF NOT EXISTS ' . static::tableName() . ' (
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            message TEXT NOT NULL,
+            level VARCHAR(10) NOT NULL DEFAULT "INFO",
+            date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            type VARCHAR(50) NULL,
+            reference VARCHAR(100) NULL,
+            INDEX idx_date (date),
+            INDEX idx_type (type),
+            INDEX idx_level (level)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;';
+    }
 
     public function save(): bool
     {
@@ -46,25 +61,35 @@ class WooSyncLog extends ModelClass
             $this->date = date('Y-m-d H:i:s');
         }
         
+        // Ensure level is uppercase
+        if (!empty($this->level)) {
+            $this->level = strtoupper($this->level);
+        }
+        
         return parent::save();
     }
 
-    public function clearOldLogs(): int
+    public function clearOldLogs(int $days = 30): int
     {
-        // Keep logs for 30 days
+        // Keep logs for specified days
         $sql = "DELETE FROM " . static::tableName() 
-             . " WHERE date < '" . date('Y-m-d H:i:s', strtotime('-30 days')) . "'";
+             . " WHERE date < '" . date('Y-m-d H:i:s', strtotime("-{$days} days")) . "'";
         
         return $this->dataBase->exec($sql);
     }
 
     public static function logMessage(string $message, string $level = 'INFO', string $type = '', string $reference = ''): void
     {
-        $log = new static();
-        $log->message = $message;
-        $log->level = $level;
-        $log->type = $type;
-        $log->reference = $reference;
-        $log->save();
+        try {
+            $log = new static();
+            $log->message = substr($message, 0, 5000); // Limit message length
+            $log->level = strtoupper($level);
+            $log->type = substr($type, 0, 50);
+            $log->reference = substr($reference, 0, 100);
+            $log->save();
+        } catch (\Exception $e) {
+            // Fail silently to not break the sync process
+            error_log('WooSync: Failed to log message: ' . $e->getMessage());
+        }
     }
 }

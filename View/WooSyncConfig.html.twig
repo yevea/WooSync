@@ -3,7 +3,7 @@
 {% block body %}
 <div class="container-fluid">
     <div class="row">
-        <div class="col-lg-8">
+        <div class="col-lg-10">
             <div class="card shadow mb-4">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h6 class="m-0 font-weight-bold text-primary">
@@ -41,18 +41,6 @@
                         </div>
                     {% endif %}
 
-                    <!-- Debug Messages (for troubleshooting) -->
-                    {% if fsc.debug_messages %}
-                        <div class="alert alert-info">
-                            <strong>Debug Info:</strong>
-                            <ul class="mb-0">
-                                {% for msg in fsc.debug_messages %}
-                                    <li>{{ msg }}</li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    {% endif %}
-
                     <!-- Configuration Form -->
                     <form method="POST" action="{{ fsc.url() }}">
                         <input type="hidden" name="action" value="save">
@@ -76,7 +64,7 @@
                                    value="{{ fsc.woocommerce_key }}"
                                    required>
                             <small class="form-text text-muted">
-                                From WooCommerce REST API settings
+                                From WooCommerce → Settings → Advanced → REST API
                             </small>
                         </div>
                         
@@ -87,7 +75,7 @@
                                    value="{{ fsc.woocommerce_secret }}"
                                    required>
                             <small class="form-text text-muted">
-                                From WooCommerce REST API settings
+                                From WooCommerce → Settings → Advanced → REST API
                             </small>
                         </div>
                         
@@ -102,11 +90,13 @@
                     <!-- Quick Action Buttons (shown when configured) -->
                     {% if fsc.woocommerce_url %}
                         <hr class="my-4">
+                        <h5 class="mb-3"><i class="fas fa-bolt fa-fw"></i> Quick Actions</h5>
                         <div class="btn-group d-flex mb-4" role="group">
                             <a href="{{ fsc.url() }}?action=test" class="btn btn-info flex-fill">
                                 <i class="fas fa-plug fa-fw"></i> Test Connection
                             </a>
-                            <a href="{{ fsc.url() }}?action=sync" class="btn btn-success flex-fill">
+                            <a href="{{ fsc.url() }}?action=sync" class="btn btn-success flex-fill" 
+                               onclick="return confirm('This will sync all data (products, customers, orders, stock, taxes). Continue?');">
                                 <i class="fas fa-sync-alt fa-fw"></i> Sync All
                             </a>
                         </div>
@@ -116,23 +106,23 @@
                     {% if fsc.woocommerce_url %}
                         <div class="card border-primary">
                             <div class="card-header bg-primary text-white">
-                                <i class="fas fa-cogs fa-fw"></i> Detailed Sync Options
+                                <i class="fas fa-cogs fa-fw"></i> Individual Sync Operations
                             </div>
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-4 mb-3">
                                         <div class="card h-100">
                                             <div class="card-body text-center">
-                                                <i class="fas fa-shopping-cart fa-2x text-primary mb-3"></i>
-                                                <h6>Orders</h6>
-                                                <p class="small text-muted">Import WooCommerce orders</p>
-                                                <a href="{{ fsc.url() }}?action=sync-orders" class="btn btn-outline-primary btn-sm">
-                                                    <i class="fas fa-download fa-fw"></i> Sync Orders
+                                                <i class="fas fa-percentage fa-2x text-primary mb-3"></i>
+                                                <h6>Taxes</h6>
+                                                <p class="small text-muted">Import tax rates from WooCommerce</p>
+                                                <a href="{{ fsc.url() }}?action=sync-taxes" class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-download fa-fw"></i> Sync Taxes
                                                 </a>
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     <div class="col-md-4 mb-3">
                                         <div class="card h-100">
                                             <div class="card-body text-center">
@@ -141,6 +131,32 @@
                                                 <p class="small text-muted">Sync products and prices</p>
                                                 <a href="{{ fsc.url() }}?action=sync-products" class="btn btn-outline-primary btn-sm">
                                                     <i class="fas fa-exchange-alt fa-fw"></i> Sync Products
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-4 mb-3">
+                                        <div class="card h-100">
+                                            <div class="card-body text-center">
+                                                <i class="fas fa-users fa-2x text-primary mb-3"></i>
+                                                <h6>Customers</h6>
+                                                <p class="small text-muted">Import customer data</p>
+                                                <a href="{{ fsc.url() }}?action=sync-customers" class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-user-plus fa-fw"></i> Sync Customers
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-4 mb-3">
+                                        <div class="card h-100">
+                                            <div class="card-body text-center">
+                                                <i class="fas fa-shopping-cart fa-2x text-primary mb-3"></i>
+                                                <h6>Orders</h6>
+                                                <p class="small text-muted">Import WooCommerce orders</p>
+                                                <a href="{{ fsc.url() }}?action=sync-orders" class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-download fa-fw"></i> Sync Orders
                                                 </a>
                                             </div>
                                         </div>
@@ -160,6 +176,17 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                        
+                        <!-- Info Card -->
+                        <div class="alert alert-info mt-4">
+                            <h6><i class="fas fa-info-circle"></i> Synchronization Notes</h6>
+                            <ul class="mb-0">
+                                <li>Syncing is one-way: WooCommerce → FacturaScripts</li>
+                                <li>Run "Sync All" for initial setup (syncs taxes → products → customers → orders → stock)</li>
+                                <li>Use individual sync buttons for updates to specific entities</li>
+                                <li>All sync operations are logged for troubleshooting</li>
+                            </ul>
                         </div>
                     {% endif %}
                 </div>
