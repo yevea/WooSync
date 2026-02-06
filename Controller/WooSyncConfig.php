@@ -192,26 +192,25 @@ class WooSyncConfig extends Controller
             // Delete old settings
             $db->exec('DELETE FROM `woosync_settings`');
             
+            // Escape values for SQL
+            $urlEscaped = $db->escape($url);
+            $keyEscaped = $db->escape($key);
+            $secretEscaped = $db->escape($secret);
+            
             $this->debug_messages[] = "Inserting woocommerce_url...";
             // Insert URL
-            $db->exec('INSERT INTO `woosync_settings` (`key`, `value`) VALUES (?, ?)', [
-                'woocommerce_url',
-                $url
-            ]);
+            $sql1 = "INSERT INTO `woosync_settings` (`key`, `value`) VALUES ('woocommerce_url', {$urlEscaped})";
+            $db->exec($sql1);
             
             $this->debug_messages[] = "Inserting woocommerce_key...";
             // Insert Key
-            $db->exec('INSERT INTO `woosync_settings` (`key`, `value`) VALUES (?, ?)', [
-                'woocommerce_key',
-                $key
-            ]);
+            $sql2 = "INSERT INTO `woosync_settings` (`key`, `value`) VALUES ('woocommerce_key', {$keyEscaped})";
+            $db->exec($sql2);
             
             $this->debug_messages[] = "Inserting woocommerce_secret...";
             // Insert Secret
-            $db->exec('INSERT INTO `woosync_settings` (`key`, `value`) VALUES (?, ?)', [
-                'woocommerce_secret',
-                $secret
-            ]);
+            $sql3 = "INSERT INTO `woosync_settings` (`key`, `value`) VALUES ('woocommerce_secret', {$secretEscaped})";
+            $db->exec($sql3);
             
             Tools::log()->info('WooSync settings saved: ' . $url);
             $this->debug_messages[] = "All settings saved successfully";
