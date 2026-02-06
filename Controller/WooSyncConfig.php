@@ -35,6 +35,8 @@ class WooSyncConfig extends Controller
         // Check for messages in URL (from redirects)
         if ($this->request->query->has('saved')) {
             $this->last_success = 'Settings saved successfully!';
+            // Reload settings after save to ensure they're in memory
+            $this->loadSettings();
         }
         if ($this->request->query->has('error')) {
             $this->last_error = $this->request->query->get('error', '');
@@ -48,6 +50,8 @@ class WooSyncConfig extends Controller
             $action = $this->request->request->get('action', '');
             if ($action === 'save') {
                 $this->saveSettings();
+                // IMPORTANT: Reload settings before redirect so they're available on next pageload
+                $this->loadSettings();
                 $this->redirect($this->url() . '?saved=1');
                 return;
             }
@@ -66,7 +70,11 @@ class WooSyncConfig extends Controller
         $this->woocommerce_key = Tools::settings('WooSync', 'woocommerce_key', '');
         $this->woocommerce_secret = Tools::settings('WooSync', 'woocommerce_secret', '');
 
-        Tools::log()->debug('WooSync: Loaded settings - URL: ' . $this->woocommerce_url);
+        if (!empty($this->woocommerce_url)) {
+            Tools::log()->debug('WooSync: Loaded settings - URL: ' . $this->woocommerce_url);
+        } else {
+            Tools::log()->debug('WooSync: No settings configured yet');
+        }
     }
 
     private function processAction(string $action): void
@@ -209,12 +217,13 @@ class WooSyncConfig extends Controller
             foreach ($orders as $o) {
                 try {
                     $log = new \FacturaScripts\Plugins\WooSync\Model\WooSyncLog();
+                    $customerName = ($o['billing']['first_name'] ?? '') . ' ' . ($o['billing']['last_name'] ?? '');
                     $log->message = substr(json_encode([
                         'id'        => $o['id'] ?? null,
                         'order_num' => $o['number'] ?? null,
                         'status'    => $o['status'] ?? null,
                         'total'     => $o['total'] ?? null,
-                        'customer'  => $o['billing']['first_name'] ?? '' . ' ' . $o['billing']['last_name'] ?? ''
+                        'customer'  => trim($customerName)
                     ], JSON_UNESCAPED_UNICODE), 0, 2000);
                     $log->level = 'info';
                     $log->type = 'order';
