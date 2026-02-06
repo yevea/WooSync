@@ -104,7 +104,7 @@ class OrderSyncService extends SyncService
             
             // Date
             if (!empty($wooOrder['date_created'])) {
-                $date = date('d-m-Y', strtotime($wooOrder['date_created']));
+                $date = date('Y-m-d', strtotime($wooOrder['date_created']));
                 $pedido->fecha = $date;
             }
 

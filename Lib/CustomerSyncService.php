@@ -175,17 +175,28 @@ class CustomerSyncService extends SyncService
     }
 
     /**
-     * Generate customer code from email
+     * Generate unique customer code from email
      */
     private function generateCustomerCode(string $email): string
     {
-        // Use part of email as code
+        // Use part of email as base code
         $parts = explode('@', $email);
-        $code = strtoupper(substr($parts[0], 0, 6));
+        $baseCode = strtoupper(substr($parts[0], 0, 6));
         
-        // Add random suffix to ensure uniqueness
-        $code .= mt_rand(100, 999);
+        // Try up to 100 times to find a unique code
+        for ($i = 0; $i < 100; $i++) {
+            $suffix = mt_rand(100, 999);
+            $code = $baseCode . $suffix;
+            
+            // Check if this code already exists
+            $cliente = new Cliente();
+            if (!$cliente->loadFromCode($code)) {
+                // Code is unique, return it
+                return $code;
+            }
+        }
         
-        return $code;
+        // Fallback: use timestamp-based code if all random attempts fail
+        return $baseCode . substr(time(), -6);
     }
 }
