@@ -19,75 +19,53 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <!-- Save Success Message -->
-                    {% if app.request.query.has('saved') and app.request.query.get('saved') == '1' %}
-                        <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            <i class="fas fa-check-circle"></i> 
-                            <strong>Success!</strong> WooSync settings have been saved.
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                    {% endif %}
-                    
-                    <!-- Success Messages -->
-                    {% if app.request.query.has('success') %}
-                        <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            <i class="fas fa-check-circle"></i> 
-                            {{ app.request.query.get('success')|raw }}
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                    {% endif %}
-                    
                     <!-- Error Messages -->
-                    {% if app.request.query.has('error') %}
+                    {% if fsc.last_error %}
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
                             <i class="fas fa-exclamation-circle"></i> 
-                            {{ app.request.query.get('error')|raw }}
+                            <strong>Error:</strong> {{ fsc.last_error }}
                             <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                                 <span aria-hidden="true">&times;</span>
                             </button>
                         </div>
                     {% endif %}
-                    
-                    <!-- Info Messages -->
-                    {% if app.request.query.has('info') %}
-                        <div class="alert alert-info alert-dismissible fade show" role="alert">
-                            <i class="fas fa-info-circle"></i> 
-                            {{ app.request.query.get('info')|raw }}
+
+                    <!-- Success Messages -->
+                    {% if fsc.last_success %}
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fas fa-check-circle"></i> 
+                            <strong>Success:</strong> {{ fsc.last_success }}
                             <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                                 <span aria-hidden="true">&times;</span>
                             </button>
                         </div>
                     {% endif %}
-                    
-                    <!-- Current Settings Info -->
-                    {% if fsc.woocommerce_url %}
-                        <div class="alert alert-info mb-4">
-                            <i class="fas fa-info-circle"></i> 
-                            <strong>Current Configuration:</strong><br>
-                            Store URL: <code>{{ fsc.woocommerce_url }}</code><br>
-                            {% if fsc.woocommerce_key %}
-                                API Key: Configured<br>
-                                API Secret: Configured
-                            {% endif %}
+
+                    <!-- Debug Messages (for troubleshooting) -->
+                    {% if fsc.debug_messages %}
+                        <div class="alert alert-info">
+                            <strong>Debug Info:</strong>
+                            <ul class="mb-0">
+                                {% for msg in fsc.debug_messages %}
+                                    <li>{{ msg }}</li>
+                                {% endfor %}
+                            </ul>
                         </div>
                     {% endif %}
-                    
+
                     <!-- Configuration Form -->
-                    <form method="post" action="{{ fsc.url() }}">
+                    <form method="POST" action="{{ fsc.url() }}">
                         <input type="hidden" name="action" value="save">
                         
                         <div class="form-group">
-                            <label for="woocommerce_url">WooCommerce Store URL *</label>
+                            <label for="woocommerce_url">WooCommerce URL *</label>
                             <input type="url" id="woocommerce_url" name="woocommerce_url" 
                                    class="form-control" 
                                    value="{{ fsc.woocommerce_url }}"
-                                   placeholder="https://yourstore.com" required>
+                                   placeholder="https://yourstore.com"
+                                   required>
                             <small class="form-text text-muted">
-                                Full URL of your WooCommerce store (must be HTTPS)
+                                Base URL of your WooCommerce installation (must start with https://)
                             </small>
                         </div>
                         
@@ -98,7 +76,7 @@
                                    value="{{ fsc.woocommerce_key }}"
                                    required>
                             <small class="form-text text-muted">
-                                From WooCommerce → Settings → Advanced → REST API
+                                From WooCommerce REST API settings
                             </small>
                         </div>
                         
@@ -213,13 +191,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // Show loading indicator
             var submitBtn = form.querySelector('button[type="submit"]');
             if (submitBtn) {
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin fa-fw"></i> Saving...';
                 submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin fa-fw"></i> Saving...';
             }
-            
-            return true;
         });
     }
 });
 </script>
-{% endblock %}
