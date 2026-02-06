@@ -31,12 +31,15 @@ class WooSyncConfig extends Controller
 
         // Always load settings first
         $this->loadSettings();
+        $this->debug_messages[] = "After initial load - URL: '" . $this->woocommerce_url . "'";
 
         // Check for messages in URL (from redirects)
         if ($this->request->query->has('saved')) {
             $this->last_success = 'Settings saved successfully!';
+            $this->debug_messages[] = "Detected 'saved' query param - reloading settings";
             // Reload settings after save to ensure they're in memory
             $this->loadSettings();
+            $this->debug_messages[] = "After reload - URL: '" . $this->woocommerce_url . "'";
         }
         if ($this->request->query->has('error')) {
             $this->last_error = $this->request->query->get('error', '');
@@ -49,9 +52,11 @@ class WooSyncConfig extends Controller
         if ($this->request->getMethod() === 'POST') {
             $action = $this->request->request->get('action', '');
             if ($action === 'save') {
+                $this->debug_messages[] = "Processing POST save action";
                 $this->saveSettings();
                 // IMPORTANT: Reload settings before redirect so they're available on next pageload
                 $this->loadSettings();
+                $this->debug_messages[] = "After save and reload - URL: '" . $this->woocommerce_url . "'";
                 $this->redirect($this->url() . '?saved=1');
                 return;
             }
@@ -70,11 +75,7 @@ class WooSyncConfig extends Controller
         $this->woocommerce_key = Tools::settings('WooSync', 'woocommerce_key', '');
         $this->woocommerce_secret = Tools::settings('WooSync', 'woocommerce_secret', '');
 
-        if (!empty($this->woocommerce_url)) {
-            Tools::log()->debug('WooSync: Loaded settings - URL: ' . $this->woocommerce_url);
-        } else {
-            Tools::log()->debug('WooSync: No settings configured yet');
-        }
+        Tools::log()->debug('WooSync loadSettings - URL: ' . $this->woocommerce_url . ', Key length: ' . strlen($this->woocommerce_key));
     }
 
     private function processAction(string $action): void
@@ -107,7 +108,7 @@ class WooSyncConfig extends Controller
         $key = $this->request->request->get('woocommerce_key', '');
         $secret = $this->request->request->get('woocommerce_secret', '');
 
-        $this->debug_messages[] = "URL received: " . substr($url, 0, 30) . "...";
+        $this->debug_messages[] = "Received POST - URL: " . substr($url, 0, 30) . "...";
         $this->debug_messages[] = "Key length: " . strlen($key);
         $this->debug_messages[] = "Secret length: " . strlen($secret);
 
@@ -132,7 +133,7 @@ class WooSyncConfig extends Controller
             Tools::settingsSet('WooSync', 'woocommerce_secret', $secret);
 
             Tools::log()->info('WooSync settings saved: ' . $url);
-            $this->debug_messages[] = "Settings saved to database";
+            $this->debug_messages[] = "Settings saved via Tools::settingsSet()";
 
             // Update current values
             $this->woocommerce_url = $url;
