@@ -4,6 +4,7 @@ namespace FacturaScripts\Plugins\WooSync\Controller;
 use FacturaScripts\Core\Base\Controller;
 use FacturaScripts\Core\Base\ControllerPermissions;
 use FacturaScripts\Core\Tools;
+use FacturaScripts\Core\Model\AppSettings;
 use Symfony\Component\HttpFoundation\Response;
 
 class WooSyncConfig extends Controller
@@ -54,7 +55,7 @@ class WooSyncConfig extends Controller
             if ($action === 'save') {
                 $this->debug_messages[] = "Processing POST save action";
                 $this->saveSettings();
-                // IMPORTANT: Reload settings before redirect so they're available on next pageload
+                // Reload settings before redirect
                 $this->loadSettings();
                 $this->debug_messages[] = "After save and reload - URL: '" . $this->woocommerce_url . "'";
                 $this->redirect($this->url() . '?saved=1');
@@ -71,9 +72,16 @@ class WooSyncConfig extends Controller
 
     private function loadSettings(): void
     {
-        $this->woocommerce_url = Tools::settings('WooSync', 'woocommerce_url', '');
-        $this->woocommerce_key = Tools::settings('WooSync', 'woocommerce_key', '');
-        $this->woocommerce_secret = Tools::settings('WooSync', 'woocommerce_secret', '');
+        // Use AppSettings model to load plugin settings
+        $appSettings = new AppSettings();
+        $appSettings->loadConfiguration();
+        
+        // Read settings from AppSettings
+        $settings = $appSettings->getArray('WooSync', []);
+        
+        $this->woocommerce_url = $settings['woocommerce_url'] ?? '';
+        $this->woocommerce_key = $settings['woocommerce_key'] ?? '';
+        $this->woocommerce_secret = $settings['woocommerce_secret'] ?? '';
 
         Tools::log()->debug('WooSync loadSettings - URL: ' . $this->woocommerce_url . ', Key length: ' . strlen($this->woocommerce_key));
     }
@@ -128,20 +136,30 @@ class WooSyncConfig extends Controller
         }
 
         try {
-            Tools::settingsSet('WooSync', 'woocommerce_url', $url);
-            Tools::settingsSet('WooSync', 'woocommerce_key', $key);
-            Tools::settingsSet('WooSync', 'woocommerce_secret', $secret);
+            // Use AppSettings to save settings properly
+            $appSettings = new AppSettings();
+            $appSettings->loadConfiguration();
+            
+            // Set the values in the plugin section
+            $appSettings->set('WooSync', 'woocommerce_url', $url);
+            $appSettings->set('WooSync', 'woocommerce_key', $key);
+            $appSettings->set('WooSync', 'woocommerce_secret', $secret);
+            
+            // Save to database
+            if ($appSettings->save()) {
+                Tools::log()->info('WooSync settings saved: ' . $url);
+                $this->debug_messages[] = "Settings saved via AppSettings";
 
-            Tools::log()->info('WooSync settings saved: ' . $url);
-            $this->debug_messages[] = "Settings saved via Tools::settingsSet()";
+                // Update current values
+                $this->woocommerce_url = $url;
+                $this->woocommerce_key = $key;
+                $this->woocommerce_secret = $secret;
 
-            // Update current values
-            $this->woocommerce_url = $url;
-            $this->woocommerce_key = $key;
-            $this->woocommerce_secret = $secret;
-
-            $this->last_success = 'Settings saved successfully!';
-            return true;
+                $this->last_success = 'Settings saved successfully!';
+                return true;
+            } else {
+                throw new \Exception('AppSettings->save() returned false');
+            }
         } catch (\Exception $e) {
             Tools::log()->error('WooSync: Error saving settings: ' . $e->getMessage());
             $this->debug_messages[] = "Database error: " . $e->getMessage();
