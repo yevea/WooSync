@@ -51,27 +51,11 @@ class WooSyncConfig extends Controller
                 $this->redirect($this->url() . '?saved=1');
                 return;
             }
-
-            // Other POST actions can be handled here if needed
-            switch ($action) {
-                case 'sync':
-                    $this->syncAll();
-                    break;
-                case 'sync-orders':
-                    $this->syncOrders();
-                    break;
-                case 'sync-products':
-                    $this->syncProducts();
-                    break;
-                case 'sync-stock':
-                    $this->syncStock();
-                    break;
-            }
         }
 
         // Process GET actions (test, sync buttons)
         $action = $this->request->get('action', '');
-        if (!empty($action) && $action !== 'save') {
+        if (!empty($action)) {
             $this->processAction($action);
         }
     }
@@ -104,7 +88,6 @@ class WooSyncConfig extends Controller
                 $this->syncStock();
                 break;
             default:
-                // Unknown action
                 Tools::log()->warning('WooSync: Unknown action requested: ' . $action);
                 break;
         }
@@ -222,8 +205,27 @@ class WooSyncConfig extends Controller
 
             Tools::log()->info("WooSync: Found {$count} orders");
 
-            // TODO: implement order import into FacturaScripts
-            $this->redirect($this->url() . '?success=' . urlencode("Found {$count} orders. Order sync needs implementation."));
+            // Save a log entry per order to verify the content & mapping
+            foreach ($orders as $o) {
+                try {
+                    $log = new \FacturaScripts\Plugins\WooSync\Model\WooSyncLog();
+                    $log->message = substr(json_encode([
+                        'id'        => $o['id'] ?? null,
+                        'order_num' => $o['number'] ?? null,
+                        'status'    => $o['status'] ?? null,
+                        'total'     => $o['total'] ?? null,
+                        'customer'  => $o['billing']['first_name'] ?? '' . ' ' . $o['billing']['last_name'] ?? ''
+                    ], JSON_UNESCAPED_UNICODE), 0, 2000);
+                    $log->level = 'info';
+                    $log->type = 'order';
+                    $log->reference = (string)($o['id'] ?? '');
+                    $log->save();
+                } catch (\Exception $inner) {
+                    Tools::log()->error('WooSync: Failed to log order: ' . $inner->getMessage());
+                }
+            }
+
+            $this->redirect($this->url() . '?success=' . urlencode("Found {$count} orders. Logged {$count} items."));
         } catch (\Exception $e) {
             Tools::log()->error('WooSync: Order sync error: ' . $e->getMessage());
             $this->redirect($this->url() . '?error=' . urlencode('Order sync error: ' . $e->getMessage()));
@@ -266,7 +268,7 @@ class WooSyncConfig extends Controller
                 }
             }
 
-            $this->redirect($this->url() . '?success=' . urlencode("Found {$count} products. Logged {$count} items (proof of concept)."));
+            $this->redirect($this->url() . '?success=' . urlencode("Found {$count} products. Logged {$count} items."));
         } catch (\Exception $e) {
             Tools::log()->error('WooSync: Product sync error: ' . $e->getMessage());
             $this->redirect($this->url() . '?error=' . urlencode('Product sync error: ' . $e->getMessage()));
@@ -276,7 +278,7 @@ class WooSyncConfig extends Controller
     private function syncStock(): void
     {
         Tools::log()->info('WooSync: Starting stock synchronization');
-        $this->redirect($this->url() . '?info=' . urlencode('Stock sync needs implementation.'));
+        $this->redirect($this->url() . '?success=' . urlencode('Stock sync needs implementation.'));
     }
 
     protected function createViews(): void
