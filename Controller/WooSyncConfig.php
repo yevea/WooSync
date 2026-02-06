@@ -15,13 +15,6 @@ class WooSyncConfig extends Controller
     public $last_error = '';
     public $last_success = '';
     public $debug_messages = [];
-    private $db;
-
-    public function __construct($className = '', $uri = '', $userAgent = '')
-    {
-        parent::__construct($className, $uri, $userAgent);
-        $this->db = new DataBase();
-    }
 
     public function getPageData(): array
     {
@@ -36,6 +29,9 @@ class WooSyncConfig extends Controller
     public function privateCore(&$response, $user, $permissions): void
     {
         parent::privateCore($response, $user, $permissions);
+
+        // Ensure settings table exists
+        $this->ensureSettingsTable();
 
         // Always load settings first
         $this->loadSettings();
@@ -75,29 +71,67 @@ class WooSyncConfig extends Controller
         }
     }
 
+    private function ensureSettingsTable(): void
+    {
+        try {
+            $db = new DataBase();
+            
+            // Check if table exists
+            $sql = "SHOW TABLES LIKE 'woosync_settings'";
+            $result = $db->select($sql);
+            
+            if (empty($result)) {
+                // Table doesn't exist, create it
+                $createTableSQL = 'CREATE TABLE IF NOT EXISTS `woosync_settings` (
+                    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                    `key` VARCHAR(255) NOT NULL UNIQUE,
+                    `value` LONGTEXT,
+                    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                )';
+                
+                $db->exec($createTableSQL);
+                Tools::log()->info('WooSync: Created woosync_settings table');
+            }
+        } catch (\Exception $e) {
+            Tools::log()->error('WooSync: Error ensuring settings table: ' . $e->getMessage());
+        }
+    }
+
     private function loadSettings(): void
     {
         try {
-            // Load settings from woosync_settings table
-            $sql = 'SELECT `key`, `value` FROM `woosync_settings` WHERE 1=1';
-            $results = $this->db->select($sql);
+            $db = new DataBase();
             
-            foreach ($results as $row) {
-                $key = $row['key'] ?? '';
-                $value = $row['value'] ?? '';
-                
-                if ($key === 'woocommerce_url') {
-                    $this->woocommerce_url = $value;
-                } elseif ($key === 'woocommerce_key') {
-                    $this->woocommerce_key = $value;
-                } elseif ($key === 'woocommerce_secret') {
-                    $this->woocommerce_secret = $value;
+            // Simple select query
+            $sql = 'SELECT `key`, `value` FROM `woosync_settings`';
+            $rows = $db->select($sql);
+            
+            $this->debug_messages[] = "Database query returned " . count($rows) . " rows";
+            
+            if (!empty($rows)) {
+                foreach ($rows as $row) {
+                    $key = $row['key'] ?? '';
+                    $value = $row['value'] ?? '';
+                    
+                    if ($key === 'woocommerce_url') {
+                        $this->woocommerce_url = $value;
+                        $this->debug_messages[] = "Loaded woocommerce_url: " . substr($value, 0, 30);
+                    } elseif ($key === 'woocommerce_key') {
+                        $this->woocommerce_key = $value;
+                        $this->debug_messages[] = "Loaded woocommerce_key (length: " . strlen($value) . ")";
+                    } elseif ($key === 'woocommerce_secret') {
+                        $this->woocommerce_secret = $value;
+                        $this->debug_messages[] = "Loaded woocommerce_secret (length: " . strlen($value) . ")";
+                    }
                 }
+            } else {
+                $this->debug_messages[] = "No settings found in database";
             }
             
             Tools::log()->debug('WooSync loadSettings - URL: ' . $this->woocommerce_url);
         } catch (\Exception $e) {
             Tools::log()->error('WooSync: Error loading settings: ' . $e->getMessage());
+            $this->debug_messages[] = "Error loading settings: " . $e->getMessage();
         }
     }
 
@@ -151,21 +185,36 @@ class WooSyncConfig extends Controller
         }
 
         try {
-            // Ensure table exists
+            $db = new DataBase();
             $this->ensureSettingsTable();
             
+            $this->debug_messages[] = "Deleting old settings...";
             // Delete old settings
-            $this->db->exec('DELETE FROM `woosync_settings` WHERE 1=1');
+            $db->exec('DELETE FROM `woosync_settings`');
             
-            // Insert new settings
-            $sql = 'INSERT INTO `woosync_settings` (`key`, `value`) VALUES (?, ?)';
+            $this->debug_messages[] = "Inserting woocommerce_url...";
+            // Insert URL
+            $db->exec('INSERT INTO `woosync_settings` (`key`, `value`) VALUES (?, ?)', [
+                'woocommerce_url',
+                $url
+            ]);
             
-            $this->db->exec($sql, [['key' => 'woocommerce_url', 'value' => $url]]);
-            $this->db->exec($sql, [['key' => 'woocommerce_key', 'value' => $key]]);
-            $this->db->exec($sql, [['key' => 'woocommerce_secret', 'value' => $secret]]);
+            $this->debug_messages[] = "Inserting woocommerce_key...";
+            // Insert Key
+            $db->exec('INSERT INTO `woosync_settings` (`key`, `value`) VALUES (?, ?)', [
+                'woocommerce_key',
+                $key
+            ]);
+            
+            $this->debug_messages[] = "Inserting woocommerce_secret...";
+            // Insert Secret
+            $db->exec('INSERT INTO `woosync_settings` (`key`, `value`) VALUES (?, ?)', [
+                'woocommerce_secret',
+                $secret
+            ]);
             
             Tools::log()->info('WooSync settings saved: ' . $url);
-            $this->debug_messages[] = "Settings saved to woosync_settings table";
+            $this->debug_messages[] = "All settings saved successfully";
 
             // Update current values
             $this->woocommerce_url = $url;
@@ -180,19 +229,6 @@ class WooSyncConfig extends Controller
             $this->last_error = 'Error saving settings: ' . $e->getMessage();
             return false;
         }
-    }
-
-    private function ensureSettingsTable(): void
-    {
-        // Create settings table if it doesn't exist
-        $sql = 'CREATE TABLE IF NOT EXISTS `woosync_settings` (
-            `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-            `key` VARCHAR(255) NOT NULL UNIQUE,
-            `value` LONGTEXT,
-            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        )';
-        
-        $this->db->exec($sql);
     }
 
     private function testConnection(): void
