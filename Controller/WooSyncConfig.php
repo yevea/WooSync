@@ -11,6 +11,9 @@ class WooSyncConfig extends Controller
     public $woocommerce_url = '';
     public $woocommerce_key = '';
     public $woocommerce_secret = '';
+    public $last_error = '';
+    public $last_success = '';
+    public $debug_messages = [];
 
     public function getPageData(): array
     {
@@ -28,6 +31,17 @@ class WooSyncConfig extends Controller
 
         // Always load settings first
         $this->loadSettings();
+
+        // Check for messages in URL (from redirects)
+        if ($this->request->query->has('saved')) {
+            $this->last_success = 'Settings saved successfully!';
+        }
+        if ($this->request->query->has('error')) {
+            $this->last_error = $this->request->query->get('error', '');
+        }
+        if ($this->request->query->has('success')) {
+            $this->last_success = $this->request->query->get('success', '');
+        }
 
         // Process POST actions (form submission)
         if ($this->request->getMethod() === 'POST') {
@@ -102,23 +116,46 @@ class WooSyncConfig extends Controller
         $key = $this->request->request->get('woocommerce_key', '');
         $secret = $this->request->request->get('woocommerce_secret', '');
 
+        $this->debug_messages[] = "URL received: " . substr($url, 0, 30) . "...";
+        $this->debug_messages[] = "Key length: " . strlen($key);
+        $this->debug_messages[] = "Secret length: " . strlen($secret);
+
         if (empty($url) || empty($key) || empty($secret)) {
             Tools::log()->error('WooSync: Validation failed - empty fields');
+            $this->debug_messages[] = "ERROR: One or more fields are empty!";
+            $this->last_error = 'Please fill in all required fields (URL, Key, Secret).';
             return false;
         }
 
-        Tools::settingsSet('WooSync', 'woocommerce_url', $url);
-        Tools::settingsSet('WooSync', 'woocommerce_key', $key);
-        Tools::settingsSet('WooSync', 'woocommerce_secret', $secret);
+        // Validate URL format
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            Tools::log()->error('WooSync: Invalid URL format: ' . $url);
+            $this->debug_messages[] = "ERROR: Invalid URL format!";
+            $this->last_error = 'Invalid URL format. Use https://...';
+            return false;
+        }
 
-        Tools::log()->info('WooSync settings saved: ' . $url);
+        try {
+            Tools::settingsSet('WooSync', 'woocommerce_url', $url);
+            Tools::settingsSet('WooSync', 'woocommerce_key', $key);
+            Tools::settingsSet('WooSync', 'woocommerce_secret', $secret);
 
-        // Update current values
-        $this->woocommerce_url = $url;
-        $this->woocommerce_key = $key;
-        $this->woocommerce_secret = $secret;
+            Tools::log()->info('WooSync settings saved: ' . $url);
+            $this->debug_messages[] = "Settings saved to database";
 
-        return true;
+            // Update current values
+            $this->woocommerce_url = $url;
+            $this->woocommerce_key = $key;
+            $this->woocommerce_secret = $secret;
+
+            $this->last_success = 'Settings saved successfully!';
+            return true;
+        } catch (\Exception $e) {
+            Tools::log()->error('WooSync: Error saving settings: ' . $e->getMessage());
+            $this->debug_messages[] = "Database error: " . $e->getMessage();
+            $this->last_error = 'Error saving settings: ' . $e->getMessage();
+            return false;
+        }
     }
 
     private function testConnection(): void
@@ -219,7 +256,7 @@ class WooSyncConfig extends Controller
                         'sku'   => $p['sku'] ?? null,
                         'name'  => $p['name'] ?? null,
                         'price' => $p['price'] ?? null
-                    ], JSON_UNESCAPED_UNICODE), 0, 2000); // avoid very long DB fields
+                    ], JSON_UNESCAPED_UNICODE), 0, 2000);
                     $log->level = 'info';
                     $log->type = 'product';
                     $log->reference = (string)($p['id'] ?? '');
