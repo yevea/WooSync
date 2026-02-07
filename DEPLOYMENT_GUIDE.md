@@ -253,12 +253,19 @@ Plugins/
 
 9. **The plugin is now installed!**
 
-### If the plugin doesn't appear:
+### If the plugin doesn't appear or shows an error:
 
-- Check file permissions (should be 644 for files, 755 for folders)
-- Make sure all files were uploaded correctly
-- Check that `facturascripts.ini` file exists in the WooSync folder
-- Refresh the page (Ctrl+F5)
+- **Error message with "loadIniData" or "array, false given"**:
+  - The `facturascripts.ini` file has a syntax error
+  - Re-download the latest files from GitHub (this has been fixed)
+  - Re-upload the `facturascripts.ini` file
+  - See "Troubleshooting" section below for details
+
+- **Plugin doesn't appear in the list**:
+  - Check file permissions (should be 644 for files, 755 for folders)
+  - Make sure all files were uploaded correctly
+  - Check that `facturascripts.ini` file exists in the WooSync folder
+  - Refresh the page (Ctrl+F5)
 
 ---
 
@@ -588,6 +595,32 @@ For a typical business:
 2. Make sure `facturascripts.ini` exists in the WooSync folder
 3. Clear browser cache (Ctrl+F5)
 4. Check that files are in `Plugins/WooSync/` not in a subfolder
+
+### Problem: "Error loading plugin" or "TypeError: loadIniData(): Argument #1 ($data) must be of type array, false given"
+
+**Cause:** The `facturascripts.ini` file failed to parse. This usually happens if the file was edited manually or has special characters.
+
+**Solutions:**
+1. **Re-download the plugin files** from GitHub (the file has been fixed)
+2. **Re-upload `facturascripts.ini`** to replace the problematic version
+3. **Verify the file format:**
+   - All values should be in quotes
+   - Example: `name = "WooSync"` not `name = WooSync`
+   - No extra characters or formatting
+4. **Check file encoding:**
+   - Should be UTF-8 or ASCII text
+   - No BOM (Byte Order Mark)
+5. **Refresh the Plugins page** (Ctrl+F5)
+
+**Technical Details:**
+The INI file must be valid PHP INI format. Special characters like parentheses need to be quoted. The correct format is:
+```ini
+name = "WooSync"
+description = "Sincroniza productos... (one-way sync)"
+version = "2.0"
+min_version = "2025"
+require = "Core"
+```
 
 ### Problem: "Connection failed"
 
