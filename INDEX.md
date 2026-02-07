@@ -11,7 +11,10 @@ Welcome! This plugin syncs data from WooCommerce to FacturaScripts on shared hos
 **Never used GitHub before?**
 → Read [GITHUB_GUIDE.md](GITHUB_GUIDE.md) first!
 
-**Ready to install?**
+**Using cPanel Git Version Control?** ⭐ NEW
+→ Read [CPANEL_DEPLOYMENT.md](CPANEL_DEPLOYMENT.md) - Deploy from GitHub automatically!
+
+**Ready to install manually?**
 → Read [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - Complete step-by-step instructions!
 
 **Already installed and just need a reminder?**
@@ -37,7 +40,19 @@ Welcome! This plugin syncs data from WooCommerce to FacturaScripts on shared hos
      - Alternative methods
      - Troubleshooting download issues
 
-2. **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** (20KB) ⭐ **START HERE**
+2. **[CPANEL_DEPLOYMENT.md](CPANEL_DEPLOYMENT.md)** (11KB) ⭐ **NEW - FOR CPANEL USERS**
+   - **For:** Users with cPanel Git Version Control
+   - **Learn:** Automatic deployment from GitHub
+   - **Time:** 20 minutes
+   - **Covers:**
+     - Setting up cPanel Git
+     - Connecting to GitHub repository
+     - Deploying to FacturaScripts
+     - Automatic updates
+     - Branch management (main vs copilot branch)
+     - Troubleshooting cPanel Git issues
+
+3. **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** (22KB) ⭐ **START HERE (MANUAL)**
    - **For:** Installing and configuring the plugin
    - **Learn:** Complete installation process
    - **Time:** 15-20 minutes
@@ -52,7 +67,17 @@ Welcome! This plugin syncs data from WooCommerce to FacturaScripts on shared hos
      - Daily usage
      - Troubleshooting
 
-3. **[QUICK_START.md](QUICK_START.md)** (2KB)
+4. **[FIX_INSTRUCTIONS.md](FIX_INSTRUCTIONS.md)** (5KB)
+   - **For:** Fixing INI file parsing errors
+   - **Learn:** How to resolve installation errors
+   - **Time:** 3 minutes
+   - **Covers:**
+     - INI file syntax error fix
+     - Three different fix options
+     - Verification steps
+     - What to do after fix
+
+5. **[QUICK_START.md](QUICK_START.md)** (2KB)
    - **For:** Quick reference after installation
    - **Learn:** Fast setup recap
    - **Time:** 5 minutes
