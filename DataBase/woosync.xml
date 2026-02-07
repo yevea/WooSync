@@ -1,19 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+    WooSync Database Schema
+    This file is kept for compatibility but tables are created via Model install() methods
+-->
 <database>
+    <table name="woosync_settings">
+        <column name="id" type="serial"/>
+        <column name="setting_key" type="character varying(255)"/>
+        <column name="setting_value" type="text" null="true"/>
+        <column name="updated_at" type="timestamp" default="CURRENT_TIMESTAMP"/>
+        <constraint name="woosync_settings_pkey" type="PRIMARY KEY">
+            <column name="id"/>
+        </constraint>
+        <constraint name="woosync_settings_key_unique" type="UNIQUE">
+            <column name="setting_key"/>
+        </constraint>
+    </table>
+    
     <table name="woosync_logs">
         <column name="id" type="serial"/>
         <column name="message" type="text"/>
-        <column name="level" type="character varying(10)"/>
+        <column name="level" type="character varying(10)" default="INFO"/>
         <column name="date" type="timestamp" default="CURRENT_TIMESTAMP"/>
         <column name="type" type="character varying(50)" null="true"/>
-        <column name="reference" type="character varying(50)" null="true"/>
+        <column name="reference" type="character varying(100)" null="true"/>
         <constraint name="woosync_logs_pkey" type="PRIMARY KEY">
             <column name="id"/>
         </constraint>
-        <check name="woosync_logs_level_check">
-            <column name="level"/>
-            <operator>IN</operator>
-            <value>('INFO', 'WARNING', 'ERROR', 'DEBUG')</value>
-        </check>
     </table>
 </database>

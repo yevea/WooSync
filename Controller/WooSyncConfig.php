@@ -1,11 +1,18 @@
 <?php
+/**
+ * WooSync Configuration Controller
+ * Admin UI for configuring and managing WooCommerce synchronization
+ */
 namespace FacturaScripts\Plugins\WooSync\Controller;
 
 use FacturaScripts\Core\Base\Controller;
-use FacturaScripts\Core\Base\ControllerPermissions;
-use FacturaScripts\Core\Tools;
-use FacturaScripts\Core\Base\DataBase;
-use Symfony\Component\HttpFoundation\Response;
+use FacturaScripts\Plugins\WooSync\Model\WooSyncConfig;
+use FacturaScripts\Plugins\WooSync\Lib\WooCommerceAPI;
+use FacturaScripts\Plugins\WooSync\Lib\ProductSyncService;
+use FacturaScripts\Plugins\WooSync\Lib\CustomerSyncService;
+use FacturaScripts\Plugins\WooSync\Lib\OrderSyncService;
+use FacturaScripts\Plugins\WooSync\Lib\StockSyncService;
+use FacturaScripts\Plugins\WooSync\Lib\TaxSyncService;
 
 class WooSyncConfig extends Controller
 {
@@ -14,7 +21,6 @@ class WooSyncConfig extends Controller
     public $woocommerce_secret = '';
     public $last_error = '';
     public $last_success = '';
-    public $debug_messages = [];
 
     public function getPageData(): array
     {
@@ -30,343 +36,266 @@ class WooSyncConfig extends Controller
     {
         parent::privateCore($response, $user, $permissions);
 
-        // Ensure settings table exists
-        $this->ensureSettingsTable();
-
-        // Always load settings first
+        // Load settings
         $this->loadSettings();
-        $this->debug_messages[] = "After initial load - URL: '" . $this->woocommerce_url . "'";
 
-        // Check for messages in URL (from redirects)
+        // Handle POST requests (save settings)
+        if ($this->request->getMethod() === 'POST') {
+            $action = $this->request->request->get('action', '');
+            if ($action === 'save') {
+                if ($this->saveSettings()) {
+                    $this->redirect($this->url() . '?saved=1');
+                    return;
+                }
+            }
+        }
+
+        // Handle GET actions (test, sync buttons)
         if ($this->request->query->has('saved')) {
             $this->last_success = 'Settings saved successfully!';
-            $this->debug_messages[] = "Detected 'saved' query param - reloading settings";
-            $this->loadSettings();
-            $this->debug_messages[] = "After reload - URL: '" . $this->woocommerce_url . "'";
+            $this->loadSettings(); // Reload to show saved values
         }
+
         if ($this->request->query->has('error')) {
             $this->last_error = $this->request->query->get('error', '');
         }
+
         if ($this->request->query->has('success')) {
             $this->last_success = $this->request->query->get('success', '');
         }
 
-        // Process POST actions (form submission)
-        if ($this->request->getMethod() === 'POST') {
-            $action = $this->request->request->get('action', '');
-            if ($action === 'save') {
-                $this->debug_messages[] = "Processing POST save action";
-                $this->saveSettings();
-                $this->loadSettings();
-                $this->debug_messages[] = "After save and reload - URL: '" . $this->woocommerce_url . "'";
-                $this->redirect($this->url() . '?saved=1');
-                return;
-            }
-        }
-
-        // Process GET actions (test, sync buttons)
         $action = $this->request->get('action', '');
         if (!empty($action)) {
             $this->processAction($action);
         }
     }
 
-    private function ensureSettingsTable(): void
-    {
-        try {
-            $db = new DataBase();
-            
-            // Check if table exists
-            $sql = "SHOW TABLES LIKE 'woosync_settings'";
-            $result = $db->select($sql);
-            
-            if (empty($result)) {
-                // Table doesn't exist, create it
-                $createTableSQL = 'CREATE TABLE IF NOT EXISTS `woosync_settings` (
-                    `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                    `key` VARCHAR(255) NOT NULL UNIQUE,
-                    `value` LONGTEXT,
-                    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-                )';
-                
-                $db->exec($createTableSQL);
-                Tools::log()->info('WooSync: Created woosync_settings table');
-            }
-        } catch (\Exception $e) {
-            Tools::log()->error('WooSync: Error ensuring settings table: ' . $e->getMessage());
-        }
-    }
-
     private function loadSettings(): void
     {
-        try {
-            $db = new DataBase();
-            
-            // Simple select query
-            $sql = 'SELECT `key`, `value` FROM `woosync_settings`';
-            $rows = $db->select($sql);
-            
-            $this->debug_messages[] = "Database query returned " . count($rows) . " rows";
-            
-            if (!empty($rows)) {
-                foreach ($rows as $row) {
-                    $key = $row['key'] ?? '';
-                    $value = $row['value'] ?? '';
-                    
-                    if ($key === 'woocommerce_url') {
-                        $this->woocommerce_url = $value;
-                        $this->debug_messages[] = "Loaded woocommerce_url: " . substr($value, 0, 30);
-                    } elseif ($key === 'woocommerce_key') {
-                        $this->woocommerce_key = $value;
-                        $this->debug_messages[] = "Loaded woocommerce_key (length: " . strlen($value) . ")";
-                    } elseif ($key === 'woocommerce_secret') {
-                        $this->woocommerce_secret = $value;
-                        $this->debug_messages[] = "Loaded woocommerce_secret (length: " . strlen($value) . ")";
-                    }
-                }
-            } else {
-                $this->debug_messages[] = "No settings found in database";
-            }
-            
-            Tools::log()->debug('WooSync loadSettings - URL: ' . $this->woocommerce_url);
-        } catch (\Exception $e) {
-            Tools::log()->error('WooSync: Error loading settings: ' . $e->getMessage());
-            $this->debug_messages[] = "Error loading settings: " . $e->getMessage();
-        }
-    }
-
-    private function processAction(string $action): void
-    {
-        switch ($action) {
-            case 'test':
-                $this->testConnection();
-                break;
-            case 'sync':
-                $this->syncAll();
-                break;
-            case 'sync-orders':
-                $this->syncOrders();
-                break;
-            case 'sync-products':
-                $this->syncProducts();
-                break;
-            case 'sync-stock':
-                $this->syncStock();
-                break;
-            default:
-                Tools::log()->warning('WooSync: Unknown action requested: ' . $action);
-                break;
-        }
+        $settings = WooSyncConfig::getWooCommerceSettings();
+        $this->woocommerce_url = $settings['url'];
+        $this->woocommerce_key = $settings['consumer_key'];
+        $this->woocommerce_secret = $settings['consumer_secret'];
     }
 
     private function saveSettings(): bool
     {
-        $url = $this->request->request->get('woocommerce_url', '');
-        $key = $this->request->request->get('woocommerce_key', '');
-        $secret = $this->request->request->get('woocommerce_secret', '');
+        $url = trim($this->request->request->get('woocommerce_url', ''));
+        $key = trim($this->request->request->get('woocommerce_key', ''));
+        $secret = trim($this->request->request->get('woocommerce_secret', ''));
 
-        $this->debug_messages[] = "Received POST - URL: " . substr($url, 0, 30) . "...";
-        $this->debug_messages[] = "Key length: " . strlen($key);
-        $this->debug_messages[] = "Secret length: " . strlen($secret);
-
+        // Validate inputs
         if (empty($url) || empty($key) || empty($secret)) {
-            Tools::log()->error('WooSync: Validation failed - empty fields');
-            $this->debug_messages[] = "ERROR: One or more fields are empty!";
             $this->last_error = 'Please fill in all required fields (URL, Key, Secret).';
             return false;
         }
 
         // Validate URL format
         if (!filter_var($url, FILTER_VALIDATE_URL)) {
-            Tools::log()->error('WooSync: Invalid URL format: ' . $url);
-            $this->debug_messages[] = "ERROR: Invalid URL format!";
-            $this->last_error = 'Invalid URL format. Use https://...';
+            $this->last_error = 'Invalid URL format. Use https://yourstore.com';
             return false;
         }
 
+        // Save settings
         try {
-            $db = new DataBase();
-            $this->ensureSettingsTable();
+            WooSyncConfig::setSetting('woocommerce_url', $url);
+            WooSyncConfig::setSetting('woocommerce_key', $key);
+            WooSyncConfig::setSetting('woocommerce_secret', $secret);
             
-            $this->debug_messages[] = "Deleting old settings...";
-            // Delete old settings
-            $db->exec('DELETE FROM `woosync_settings`');
-            
-            // Escape values for SQL
-            $urlEscaped = $db->escape($url);
-            $keyEscaped = $db->escape($key);
-            $secretEscaped = $db->escape($secret);
-            
-            $this->debug_messages[] = "Inserting woocommerce_url...";
-            // Insert URL
-            $sql1 = "INSERT INTO `woosync_settings` (`key`, `value`) VALUES ('woocommerce_url', {$urlEscaped})";
-            $db->exec($sql1);
-            
-            $this->debug_messages[] = "Inserting woocommerce_key...";
-            // Insert Key
-            $sql2 = "INSERT INTO `woosync_settings` (`key`, `value`) VALUES ('woocommerce_key', {$keyEscaped})";
-            $db->exec($sql2);
-            
-            $this->debug_messages[] = "Inserting woocommerce_secret...";
-            // Insert Secret
-            $sql3 = "INSERT INTO `woosync_settings` (`key`, `value`) VALUES ('woocommerce_secret', {$secretEscaped})";
-            $db->exec($sql3);
-            
-            Tools::log()->info('WooSync settings saved: ' . $url);
-            $this->debug_messages[] = "All settings saved successfully";
-
-            // Update current values
-            $this->woocommerce_url = $url;
-            $this->woocommerce_key = $key;
-            $this->woocommerce_secret = $secret;
-
             $this->last_success = 'Settings saved successfully!';
             return true;
+            
         } catch (\Exception $e) {
-            Tools::log()->error('WooSync: Error saving settings: ' . $e->getMessage());
-            $this->debug_messages[] = "Database error: " . $e->getMessage();
             $this->last_error = 'Error saving settings: ' . $e->getMessage();
             return false;
         }
     }
 
-    private function testConnection(): void
+    private function processAction(string $action): void
     {
-        Tools::log()->info('WooSync: Testing connection...');
-
+        // Check if settings are configured
         if (empty($this->woocommerce_url) || empty($this->woocommerce_key) || empty($this->woocommerce_secret)) {
             $this->redirect($this->url() . '?error=' . urlencode('Please configure WooCommerce settings first.'));
             return;
         }
 
         try {
-            $wooApi = new \FacturaScripts\Plugins\WooSync\Lib\WooCommerceAPI();
+            switch ($action) {
+                case 'test':
+                    $this->testConnection();
+                    break;
+                case 'sync':
+                    $this->syncAll();
+                    break;
+                case 'sync-products':
+                    $this->syncProducts();
+                    break;
+                case 'sync-customers':
+                    $this->syncCustomers();
+                    break;
+                case 'sync-orders':
+                    $this->syncOrders();
+                    break;
+                case 'sync-stock':
+                    $this->syncStock();
+                    break;
+                case 'sync-taxes':
+                    $this->syncTaxes();
+                    break;
+                default:
+                    $this->redirect($this->url() . '?error=' . urlencode('Unknown action: ' . $action));
+                    break;
+            }
+        } catch (\Exception $e) {
+            $this->redirect($this->url() . '?error=' . urlencode('Error: ' . $e->getMessage()));
+        }
+    }
 
+    private function testConnection(): void
+    {
+        try {
+            $wooApi = new WooCommerceAPI();
+            
             if ($wooApi->testConnection()) {
                 $this->redirect($this->url() . '?success=' . urlencode('✅ Connection to WooCommerce successful!'));
             } else {
-                $this->redirect($this->url() . '?error=' . urlencode('❌ Connection to WooCommerce failed. Check your credentials.'));
+                $this->redirect($this->url() . '?error=' . urlencode('❌ Connection failed. Check your credentials.'));
             }
         } catch (\Exception $e) {
-            Tools::log()->error('WooSync: Connection test error: ' . $e->getMessage());
             $this->redirect($this->url() . '?error=' . urlencode('Connection error: ' . $e->getMessage()));
         }
     }
 
     private function syncAll(): void
     {
-        Tools::log()->info('WooSync: Starting full synchronization');
-
-        if (empty($this->woocommerce_url) || empty($this->woocommerce_key) || empty($this->woocommerce_secret)) {
-            $this->redirect($this->url() . '?error=' . urlencode('Please configure WooCommerce settings first.'));
-            return;
-        }
-
         try {
-            $wooApi = new \FacturaScripts\Plugins\WooSync\Lib\WooCommerceAPI();
-
-            if (!$wooApi->testConnection()) {
-                $this->redirect($this->url() . '?error=' . urlencode('Cannot sync: Connection failed.'));
-                return;
-            }
-
-            $this->redirect($this->url() . '?success=' . urlencode('Synchronization started successfully!'));
+            $wooApi = new WooCommerceAPI();
+            
+            // Sync in order: taxes -> products -> customers -> orders -> stock
+            $taxService = new TaxSyncService($wooApi);
+            $taxResults = $taxService->sync();
+            
+            $productService = new ProductSyncService($wooApi);
+            $productResults = $productService->sync();
+            
+            $customerService = new CustomerSyncService($wooApi);
+            $customerResults = $customerService->sync();
+            
+            $orderService = new OrderSyncService($wooApi);
+            $orderResults = $orderService->sync();
+            
+            $stockService = new StockSyncService($wooApi);
+            $stockResults = $stockService->sync();
+            
+            $message = sprintf(
+                'Full sync completed! Taxes: %d, Products: %d, Customers: %d, Orders: %d, Stock: %d',
+                $taxResults['synced'],
+                $productResults['synced'],
+                $customerResults['synced'],
+                $orderResults['synced'],
+                $stockResults['synced']
+            );
+            
+            $this->redirect($this->url() . '?success=' . urlencode($message));
+            
         } catch (\Exception $e) {
-            Tools::log()->error('WooSync: Sync all error: ' . $e->getMessage());
             $this->redirect($this->url() . '?error=' . urlencode('Sync error: ' . $e->getMessage()));
-        }
-    }
-
-    private function syncOrders(): void
-    {
-        Tools::log()->info('WooSync: Starting order synchronization');
-
-        if (empty($this->woocommerce_url) || empty($this->woocommerce_key) || empty($this->woocommerce_secret)) {
-            $this->redirect($this->url() . '?error=' . urlencode('Please configure WooCommerce settings first.'));
-            return;
-        }
-
-        try {
-            $wooApi = new \FacturaScripts\Plugins\WooSync\Lib\WooCommerceAPI();
-
-            $orders = $wooApi->getOrders(['per_page' => 5]);
-            $count = is_array($orders) ? count($orders) : 0;
-
-            Tools::log()->info("WooSync: Found {$count} orders");
-
-            foreach ($orders as $o) {
-                try {
-                    $log = new \FacturaScripts\Plugins\WooSync\Model\WooSyncLog();
-                    $customerName = ($o['billing']['first_name'] ?? '') . ' ' . ($o['billing']['last_name'] ?? '');
-                    $log->message = substr(json_encode([
-                        'id'        => $o['id'] ?? null,
-                        'order_num' => $o['number'] ?? null,
-                        'status'    => $o['status'] ?? null,
-                        'total'     => $o['total'] ?? null,
-                        'customer'  => trim($customerName)
-                    ], JSON_UNESCAPED_UNICODE), 0, 2000);
-                    $log->level = 'info';
-                    $log->type = 'order';
-                    $log->reference = (string)($o['id'] ?? '');
-                    $log->save();
-                } catch (\Exception $inner) {
-                    Tools::log()->error('WooSync: Failed to log order: ' . $inner->getMessage());
-                }
-            }
-
-            $this->redirect($this->url() . '?success=' . urlencode("Found {$count} orders. Logged {$count} items."));
-        } catch (\Exception $e) {
-            Tools::log()->error('WooSync: Order sync error: ' . $e->getMessage());
-            $this->redirect($this->url() . '?error=' . urlencode('Order sync error: ' . $e->getMessage()));
         }
     }
 
     private function syncProducts(): void
     {
-        Tools::log()->info('WooSync: Starting product synchronization');
-
-        if (empty($this->woocommerce_url) || empty($this->woocommerce_key) || empty($this->woocommerce_secret)) {
-            $this->redirect($this->url() . '?error=' . urlencode('Please configure WooCommerce settings first.'));
-            return;
-        }
-
         try {
-            $wooApi = new \FacturaScripts\Plugins\WooSync\Lib\WooCommerceAPI();
-
-            $products = $wooApi->getProducts(['per_page' => 50]);
-            $count = is_array($products) ? count($products) : 0;
-
-            Tools::log()->info("WooSync: Found {$count} products");
-
-            foreach ($products as $p) {
-                try {
-                    $log = new \FacturaScripts\Plugins\WooSync\Model\WooSyncLog();
-                    $log->message = substr(json_encode([
-                        'id'    => $p['id'] ?? null,
-                        'sku'   => $p['sku'] ?? null,
-                        'name'  => $p['name'] ?? null,
-                        'price' => $p['price'] ?? null
-                    ], JSON_UNESCAPED_UNICODE), 0, 2000);
-                    $log->level = 'info';
-                    $log->type = 'product';
-                    $log->reference = (string)($p['id'] ?? '');
-                    $log->save();
-                } catch (\Exception $inner) {
-                    Tools::log()->error('WooSync: Failed to log product: ' . $inner->getMessage());
-                }
-            }
-
-            $this->redirect($this->url() . '?success=' . urlencode("Found {$count} products. Logged {$count} items."));
+            $wooApi = new WooCommerceAPI();
+            $service = new ProductSyncService($wooApi);
+            $results = $service->sync();
+            
+            $message = sprintf(
+                'Product sync completed: %d synced, %d errors, %d skipped',
+                $results['synced'], $results['errors'], $results['skipped']
+            );
+            
+            $this->redirect($this->url() . '?success=' . urlencode($message));
+            
         } catch (\Exception $e) {
-            Tools::log()->error('WooSync: Product sync error: ' . $e->getMessage());
             $this->redirect($this->url() . '?error=' . urlencode('Product sync error: ' . $e->getMessage()));
+        }
+    }
+
+    private function syncCustomers(): void
+    {
+        try {
+            $wooApi = new WooCommerceAPI();
+            $service = new CustomerSyncService($wooApi);
+            $results = $service->sync();
+            
+            $message = sprintf(
+                'Customer sync completed: %d synced, %d errors, %d skipped',
+                $results['synced'], $results['errors'], $results['skipped']
+            );
+            
+            $this->redirect($this->url() . '?success=' . urlencode($message));
+            
+        } catch (\Exception $e) {
+            $this->redirect($this->url() . '?error=' . urlencode('Customer sync error: ' . $e->getMessage()));
+        }
+    }
+
+    private function syncOrders(): void
+    {
+        try {
+            $wooApi = new WooCommerceAPI();
+            $service = new OrderSyncService($wooApi);
+            $results = $service->sync();
+            
+            $message = sprintf(
+                'Order sync completed: %d synced, %d errors, %d skipped',
+                $results['synced'], $results['errors'], $results['skipped']
+            );
+            
+            $this->redirect($this->url() . '?success=' . urlencode($message));
+            
+        } catch (\Exception $e) {
+            $this->redirect($this->url() . '?error=' . urlencode('Order sync error: ' . $e->getMessage()));
         }
     }
 
     private function syncStock(): void
     {
-        Tools::log()->info('WooSync: Starting stock synchronization');
-        $this->redirect($this->url() . '?success=' . urlencode('Stock sync needs implementation.'));
+        try {
+            $wooApi = new WooCommerceAPI();
+            $service = new StockSyncService($wooApi);
+            $results = $service->sync();
+            
+            $message = sprintf(
+                'Stock sync completed: %d synced, %d errors, %d skipped',
+                $results['synced'], $results['errors'], $results['skipped']
+            );
+            
+            $this->redirect($this->url() . '?success=' . urlencode($message));
+            
+        } catch (\Exception $e) {
+            $this->redirect($this->url() . '?error=' . urlencode('Stock sync error: ' . $e->getMessage()));
+        }
+    }
+
+    private function syncTaxes(): void
+    {
+        try {
+            $wooApi = new WooCommerceAPI();
+            $service = new TaxSyncService($wooApi);
+            $results = $service->sync();
+            
+            $message = sprintf(
+                'Tax sync completed: %d synced, %d errors, %d skipped',
+                $results['synced'], $results['errors'], $results['skipped']
+            );
+            
+            $this->redirect($this->url() . '?success=' . urlencode($message));
+            
+        } catch (\Exception $e) {
+            $this->redirect($this->url() . '?error=' . urlencode('Tax sync error: ' . $e->getMessage()));
+        }
     }
 
     protected function createViews(): void
