@@ -17,4 +17,5 @@ composer.lock
 
 # Development files
 debug*.php
-test*.php
+# Keep test-plugins.php and verify-ini.php for users
+# test*.php
