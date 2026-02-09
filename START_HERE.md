@@ -1,57 +1,67 @@
-# 🎯 START HERE - February 9, 2026
+# 🎯 START HERE - February 9, 2026 (Updated)
 
 ## Martin - Latest Update
 
-You've made **great progress**! But now there's a new database error.
+You've **pulled the latest code via cPanel Git** - great! 
+
+But you're getting "Unknown column 'setting_key'" errors because your database has the **old table structure**.
 
 ---
 
-## 📖 Read These Files in This Order:
+## 📖 READ THIS FILE FIRST: ⭐
 
-### 1. **DATABASE_FIX.md** ⭐ LATEST FIX
-- Explains the database table errors
-- Simple 1-2 minute fix
-- Step-by-step instructions
-- **You need to upload the /Table/ directory!**
+### **TABLE_MIGRATION_FIX.md** - CURRENT ISSUE
 
-### 2. **LATEST_FIX.md**
-- Explains the class redeclaration error (previous issue)
-- Already fixed in repository
+This explains:
+- ✅ Why you're getting "Unknown column 'setting_key'" 
+- ✅ How the automatic migration works
+- ✅ **QUICK FIX: Just disable and re-enable the plugin! (30 seconds)**
+- ✅ Manual fix option (if automatic doesn't work)
+- ✅ What to do after the fix
 
-### 3. **COMPLETE_FIX_SUMMARY.md**
+**The fix is AUTOMATIC - just disable/enable the plugin!**
+
+---
+
+## Other Documentation (For Reference):
+
+### **DATABASE_FIX.md**
+- Previous issue (missing /Table/ directory)
+- You already pulled this via Git ✅
+
+### **LATEST_FIX.md**
+- Class redeclaration error (previous issue)
+- Already fixed ✅
+
+### **COMPLETE_FIX_SUMMARY.md**
 - Complete guide covering ALL errors
-- Detailed explanations
 - Getting started after fixes
-- Troubleshooting help
 
-### 4. **MARTIN_START_HERE.md**
+### **MARTIN_START_HERE.md**
 - Background info on first error (INI file)
-- Diagnostic tools
+- Already fixed ✅
 
 ---
 
-## ⚡ Quick Fix (1-2 Minutes)
+## ⚡ Super Quick Fix (30 Seconds)
 
-**You need to upload the new /Table/ directory with database schema files.**
+**You already pulled the code via cPanel Git ✅**
 
-### Option 1: Upload Just Table Directory (Fastest)
+Now just trigger the automatic migration:
 
-**Download:**
-1. woosync_settings.xml: https://raw.githubusercontent.com/yevea/WooSync/copilot/create-woosync-plugin/Table/woosync_settings.xml
-2. woosync_logs.xml: https://raw.githubusercontent.com/yevea/WooSync/copilot/create-woosync-plugin/Table/woosync_logs.xml
+1. Go to: `/AdminPlugins` in FacturaScripts
+2. Find "WooSync" in the plugin list
+3. Click **"Disable"** (toggle it off)
+4. Wait 2 seconds
+5. Click **"Enable"** (toggle it on)
+6. Refresh page (Ctrl+F5)
+7. ✅ **Done!** Error should be gone!
 
-**Create directory on server:**
-```
-/Plugins/WooSync/Table/
-```
+**That's it!** The migration runs automatically when you enable the plugin.
 
-**Upload both XML files to that directory**
+**Note:** You'll need to re-enter your WooCommerce API credentials after this (one-time).
 
-### Option 2: Re-upload Complete Plugin (Recommended)
-
-Use cPanel Git to pull all latest files, or download and upload the entire plugin.
-
-**Read DATABASE_FIX.md for complete instructions!**
+**Read TABLE_MIGRATION_FIX.md for full details and troubleshooting!**
 
 ---
 
@@ -63,10 +73,14 @@ Use cPanel Git to pull all latest files, or download and upload the entire plugi
 **Issue #2: Class Name Conflict** ✅ SOLVED
 - Controller naming issue fixed
 
-**Issue #3: Database Schema Files** ← YOU ARE HERE
-- FacturaScripts needs schema files in /Table/ directory
-- Files were missing
-- Easy fix: upload the /Table/ directory
+**Issue #3: Database Schema Files** ✅ SOLVED
+- You pulled them via cPanel Git
+
+**Issue #4: Old Table Structure** ← YOU ARE HERE
+- Database has old column names
+- New code expects 'setting_key' column
+- **Automatic migration will fix this**
+- Just disable/enable plugin to trigger it
 
 ---
 
