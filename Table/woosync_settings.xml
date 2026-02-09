@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    WooSync Settings Table Schema
+    Stores WooCommerce API credentials and plugin settings
+-->
+<tabla>
+    <columna>
+        <nombre>id</nombre>
+        <tipo>serial</tipo>
+    </columna>
+    <columna>
+        <nombre>setting_key</nombre>
+        <tipo>character varying(255)</tipo>
+        <nulo>NO</nulo>
+    </columna>
+    <columna>
+        <nombre>setting_value</nombre>
+        <tipo>text</tipo>
+        <nulo>YES</nulo>
+    </columna>
+    <columna>
+        <nombre>updated_at</nombre>
+        <tipo>timestamp</tipo>
+        <defecto>CURRENT_TIMESTAMP</defecto>
+    </columna>
+    <restriccion>
+        <nombre>woosync_settings_pkey</nombre>
+        <tipo>PRIMARY KEY (id)</tipo>
+    </restriccion>
+    <restriccion>
+        <nombre>woosync_settings_key_unique</nombre>
+        <tipo>UNIQUE (setting_key)</tipo>
+    </restriccion>
+</tabla>
