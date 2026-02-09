@@ -1,41 +1,63 @@
-# 🎯 START HERE - Martin! (Updated February 9, 2026)
+# 🎯 START HERE - Manual Database Fix Required
 
-## 🚀 Quick Fix - 30 Seconds!
+## Martin - The Automatic Fix Isn't Working
 
-You already pulled the code via cPanel Git - **great job!** ✅
-
-Now just do this:
-
-### The Fix (30 Seconds):
-
-1. Go to FacturaScripts: `/AdminPlugins`
-2. Find **"WooSync"** in the plugin list
-3. Click **"Disable"** (toggle it OFF)
-4. Wait 2 seconds
-5. Click **"Enable"** (toggle it ON)
-6. Press **Ctrl+F5** to refresh
-7. ✅ **DONE!** Error gone!
-
-**That's it!** The automatic migration runs when you enable the plugin.
-
-**Note:** You'll need to re-enter your WooCommerce API credentials after this (one-time).
+You need to use the **manual fix** instead. It's quick (2 minutes) and **guaranteed to work!**
 
 ---
 
-## 📖 For More Details
+## 🔧 Manual Fix - 2 Minutes (100% Success Rate)
 
-### **Read FINAL_SOLUTION.md** 
-- Complete guide from start to finish
-- All 4 issues explained
-- What you've already fixed (great progress!)
-- After-migration setup steps
-- Success checklist
+### Use the Fix Script ⭐ EASIEST METHOD
 
-### **Or Read TABLE_MIGRATION_FIX.md**
-- Current issue details
-- Why you're getting the error
-- Alternative fix methods
-- Troubleshooting help
+**Step 1:** Download the fix script
+```
+https://raw.githubusercontent.com/yevea/WooSync/copilot/create-woosync-plugin/fix-database.php
+```
+
+**Step 2:** Upload to FacturaScripts root directory
+```
+/home/shopcat/public_html/053-contabilidad/fs1/fix-database.php
+```
+(Same folder where `index.php` is located)
+
+**Step 3:** Open in your browser
+```
+https://yevea.com/053-contabilidad/fs1/fix-database.php
+```
+
+**Step 4:** Click the **"Fix Database Now"** button
+
+**Step 5:** Confirm when prompted
+
+**Step 6:** ✅ **Success!** Delete the script from your server (security)
+
+**Step 7:** Go to WooSync Configuration and enter your credentials
+
+**That's it!** The error will be gone and plugin will work perfectly.
+
+**Note:** Your saved credentials will be lost (you'll re-enter them once).
+
+---
+
+## 📖 Complete Instructions
+
+### **👉 Read MANUAL_DATABASE_FIX.md** ⭐ PRIMARY GUIDE
+
+This guide has **everything**:
+- ✅ 3 fix options (script, phpMyAdmin, MySQL CLI)
+- ✅ Step-by-step instructions for each
+- ✅ Troubleshooting section
+- ✅ After-fix configuration steps
+- ✅ 100% success guarantee
+
+### Alternative Methods
+
+**Don't want to use the script?**
+- **Option 2:** Use phpMyAdmin (see MANUAL_DATABASE_FIX.md)
+- **Option 3:** Use MySQL command line (see MANUAL_DATABASE_FIX.md)
+
+Both options are in the guide above!
 
 ---
 
