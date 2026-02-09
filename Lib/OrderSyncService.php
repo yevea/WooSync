@@ -141,12 +141,25 @@ class OrderSyncService
         $cliente = new Cliente();
         $cliente->email = $email;
         $cliente->nombre = trim(($billing['first_name'] ?? '') . ' ' . ($billing['last_name'] ?? ''));
-        $cliente->cifnif = $billing['company'] ?? '';
         $cliente->telefono1 = $billing['phone'] ?? '';
         
-        // Generate unique customer code
+        // Generate unique customer code with retry logic
         $baseCode = strtoupper(substr(str_replace([' ', '.', '@'], '', $email), 0, 6));
-        $code = $baseCode . rand(100, 999);
+        $maxAttempts = 10;
+        $attempt = 0;
+        
+        do {
+            $code = $baseCode . random_int(100, 999);
+            $testCliente = new Cliente();
+            $codeExists = $testCliente->loadFromCode($code);
+            $attempt++;
+        } while ($codeExists && $attempt < $maxAttempts);
+        
+        if ($codeExists) {
+            Tools::log()->error("OrderSyncService: Failed to generate unique customer code after {$maxAttempts} attempts");
+            return null;
+        }
+        
         $cliente->codcliente = $code;
         
         if ($cliente->save()) {
