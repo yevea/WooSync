@@ -6,8 +6,8 @@
 namespace FacturaScripts\Plugins\WooSync\Lib;
 
 use FacturaScripts\Dinamic\Model\Cliente;
-use FacturaScripts\Dinamic\Model\Pedido;
-use FacturaScripts\Dinamic\Model\LineaPedido;
+use FacturaScripts\Dinamic\Model\PedidoCliente;
+use FacturaScripts\Dinamic\Model\LineaPedidoCliente;
 use FacturaScripts\Dinamic\Model\Producto;
 
 class OrderSyncService extends SyncService
@@ -80,7 +80,7 @@ class OrderSyncService extends SyncService
             $orderNumber = $wooOrder['number'] ?? $wooOrderId;
 
             // Check if order already exists by checking observaciones field for WooCommerce ID
-            $pedido = new Pedido();
+            $pedido = new PedidoCliente();
             $where = [new \FacturaScripts\Core\Base\DataBase\DataBaseWhere('observaciones', '%WooCommerce ID: ' . $wooOrderId . '%', 'LIKE')];
             
             if ($pedido->loadFromCode('', $where)) {
@@ -163,7 +163,7 @@ class OrderSyncService extends SyncService
 
         foreach ($lineItems as $item) {
             try {
-                $linea = new LineaPedido();
+                $linea = new LineaPedidoCliente();
                 $linea->idpedido = $pedido->idpedido;
                 
                 // Try to find product by SKU
