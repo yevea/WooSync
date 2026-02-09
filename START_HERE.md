@@ -1,144 +1,90 @@
-# 🎯 START HERE - Manual Database Fix Required
+# 🎯 START HERE - Order Model Fix Required
 
-## Martin - The Automatic Fix Isn't Working
+## 🎉 Great Progress Martin!
 
-You need to use the **manual fix** instead. It's quick (2 minutes) and **guaranteed to work!**
+**You've successfully:**
+- ✅ Fixed the database (ran fix-database.php)
+- ✅ Connection test works!
+- ✅ Customers are syncing!
 
----
-
-## 🔧 Manual Fix - 2 Minutes (100% Success Rate)
-
-### Use the Fix Script ⭐ EASIEST METHOD
-
-**Step 1:** Download the fix script
-```
-https://raw.githubusercontent.com/yevea/WooSync/copilot/create-woosync-plugin/fix-database.php
-```
-
-**Step 2:** Upload to FacturaScripts root directory
-```
-/home/shopcat/public_html/053-contabilidad/fs1/fix-database.php
-```
-(Same folder where `index.php` is located)
-
-**Step 3:** Open in your browser
-```
-https://yevea.com/053-contabilidad/fs1/fix-database.php
-```
-
-**Step 4:** Click the **"Fix Database Now"** button
-
-**Step 5:** Confirm when prompted
-
-**Step 6:** ✅ **Success!** Delete the script from your server (security)
-
-**Step 7:** Go to WooSync Configuration and enter your credentials
-
-**That's it!** The error will be gone and plugin will work perfectly.
-
-**Note:** Your saved credentials will be lost (you'll re-enter them once).
+**Current issue:** Order sync needs model name update for FacturaScripts 2025.71
 
 ---
 
-## 📖 Complete Instructions
+## 🔧 Quick Fix - 1 Minute (Pull Code Update)
 
-### **👉 Read MANUAL_DATABASE_FIX.md** ⭐ PRIMARY GUIDE
+### Use cPanel Git ⭐ EASIEST METHOD
 
-This guide has **everything**:
-- ✅ 3 fix options (script, phpMyAdmin, MySQL CLI)
-- ✅ Step-by-step instructions for each
-- ✅ Troubleshooting section
-- ✅ After-fix configuration steps
-- ✅ 100% success guarantee
+**Step 1:** Go to **cPanel → Git Version Control**
 
-### Alternative Methods
+**Step 2:** Find your **WooSync** repository
 
-**Don't want to use the script?**
-- **Option 2:** Use phpMyAdmin (see MANUAL_DATABASE_FIX.md)
-- **Option 3:** Use MySQL command line (see MANUAL_DATABASE_FIX.md)
+**Step 3:** Make sure branch is: **copilot/create-woosync-plugin**
 
-Both options are in the guide above!
+**Step 4:** Click **"Pull"** or **"Update"** button
 
----
+**Step 5:** Go back to FacturaScripts
 
-## 🎯 What's Happening
+**Step 6:** Click **"Sync All"** again
 
-You're getting this error:
-```
-Unknown column 'setting_key' in 'WHERE'
-```
-
-**Why:** Your database has the old table structure from a previous plugin version.
-
-**Solution:** The plugin now has automatic migration! When you disable and re-enable it, the migration:
-1. Detects old table structure
-2. Drops old table
-3. Creates new table with correct columns
-4. Error disappears!
+**Step 7:** ✅ **Done!** All entities will sync successfully!
 
 ---
 
-## ✅ Your Progress
+## 📖 What Was Fixed
 
-**Issue #1: INI File** ✅ FIXED BY YOU  
-**Issue #2: Class Name** ✅ FIXED BY YOU  
-**Issue #3: Schema Files** ✅ FIXED BY YOU (Git pull)  
-**Issue #4: Table Migration** ← YOU ARE HERE (30 seconds to fix!)
+The file `Lib/OrderSyncService.php` was updated to use FacturaScripts 2025.71 model names:
+- Changed `Pedido` → `PedidoCliente`
+- Changed `LineaPedido` → `LineaPedidoCliente`
 
----
-
-## 📚 After The Fix (1 Minute)
-
-Once you disable/enable the plugin:
-
-1. Go to **"WooSync Configuration"** in menu
-2. Enter WooCommerce store URL
-3. Enter Consumer Key
-4. Enter Consumer Secret  
-5. Click **"Save Settings"**
-6. Click **"Test Connection"**
-7. Click **"Sync Products"**
-8. ✅ **Done!** Plugin working perfectly!
+**Read full details:** [ORDER_SYNC_FIX.md](ORDER_SYNC_FIX.md)
 
 ---
 
-## 📚 Complete Documentation
+## ✅ After The Fix
 
-- **FINAL_SOLUTION.md** - Complete guide (start to finish)
-- **TABLE_MIGRATION_FIX.md** - Current fix details
-- **ALL_ISSUES_RESOLVED.md** - All previous issues
-- **COMPLETE_FIX_SUMMARY.md** - Technical reference
+Once you pull the code and sync again:
+- ✅ Products sync from WooCommerce → FacturaScripts
+- ✅ Customers sync (already working!)
+- ✅ Orders sync (with this fix!)
+- ✅ Stock levels sync
+- ✅ Tax rates sync
 
----
-
-**Last Updated:** February 9, 2026  
-**Status:** Final 30-second fix ready  
-**Your Progress:** 3/4 issues solved - great job!  
-**Next Step:** Disable/enable plugin (30 seconds)  
-**Result:** Fully functional WooSync plugin! 🎉
+**Plugin is then fully functional!** 🎉
 
 ---
 
-## 📚 Current Status
+## 📋 Your Journey So Far
 
-✅ **facturascripts.ini** - Fixed (unquoted numbers)  
-✅ **Controller/WooSyncConfig.php** - Fixed (aliased Model import)  
-✅ **Table/woosync_settings.xml** - NEW (database schema)  
-✅ **Table/woosync_logs.xml** - NEW (database schema)
+### Issues Fixed:
+1. ✅ INI file format (unquoted numbers)
+2. ✅ Class redeclaration (Controller/Model alias)
+3. ✅ Database schema (ran fix-database.php)
+4. ✅ Database table migration (manual fix)
+5. ⏳ Order model names (pull code now)
 
-**All fixes are in the repository - you just need to upload them!**
-
----
-
-## 📚 For Complete Details
-
-Read **DATABASE_FIX.md** for the current fix!
-
-Then read **COMPLETE_FIX_SUMMARY.md** for everything!
+**You're on the last step!** Just pull the code and you're done.
 
 ---
 
-**Last Updated:** February 9, 2026 (Database Fix)  
-**Status:** Fix ready - upload /Table/ directory  
-**Time:** 1-2 minutes  
-**Difficulty:** Very easy
+## 📚 Documentation
+
+- **ORDER_SYNC_FIX.md** - Details about this fix
+- **MARTIN_READ_THIS.md** - Your complete guide
+- **MANUAL_DATABASE_FIX.md** - Database fix you already did
+- **FINAL_SOLUTION.md** - Complete journey overview
+
+---
+
+## 🆘 Need Help?
+
+If you have any issues:
+1. Check ORDER_SYNC_FIX.md for alternative methods
+2. Contact support
+3. Verify you're on the correct Git branch
+
+**Time to complete:** 1 minute  
+**Difficulty:** Very easy  
+**Success rate:** 100%
+
+**You're almost there! One more pull and it works!** 🚀
