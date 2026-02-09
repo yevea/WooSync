@@ -6,7 +6,7 @@
 namespace FacturaScripts\Plugins\WooSync\Controller;
 
 use FacturaScripts\Core\Base\Controller;
-use FacturaScripts\Plugins\WooSync\Model\WooSyncConfig;
+use FacturaScripts\Plugins\WooSync\Model\WooSyncConfig as WooSyncConfigModel;
 use FacturaScripts\Plugins\WooSync\Lib\WooCommerceAPI;
 use FacturaScripts\Plugins\WooSync\Lib\ProductSyncService;
 use FacturaScripts\Plugins\WooSync\Lib\CustomerSyncService;
@@ -72,7 +72,7 @@ class WooSyncConfig extends Controller
 
     private function loadSettings(): void
     {
-        $settings = WooSyncConfig::getWooCommerceSettings();
+        $settings = WooSyncConfigModel::getWooCommerceSettings();
         $this->woocommerce_url = $settings['url'];
         $this->woocommerce_key = $settings['consumer_key'];
         $this->woocommerce_secret = $settings['consumer_secret'];
@@ -98,9 +98,9 @@ class WooSyncConfig extends Controller
 
         // Save settings
         try {
-            WooSyncConfig::setSetting('woocommerce_url', $url);
-            WooSyncConfig::setSetting('woocommerce_key', $key);
-            WooSyncConfig::setSetting('woocommerce_secret', $secret);
+            WooSyncConfigModel::setSetting('woocommerce_url', $url);
+            WooSyncConfigModel::setSetting('woocommerce_key', $key);
+            WooSyncConfigModel::setSetting('woocommerce_secret', $secret);
             
             $this->last_success = 'Settings saved successfully!';
             return true;
