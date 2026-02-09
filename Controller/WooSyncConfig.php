@@ -270,7 +270,11 @@ class WooSyncConfig extends Controller
                 return;
             }
 
-            $this->redirect($this->url() . '?success=' . urlencode('Synchronization started successfully!'));
+            // Sync orders using OrderSyncService
+            $orderSync = new \FacturaScripts\Plugins\WooSync\Lib\OrderSyncService();
+            $orderSync->sync();
+
+            $this->redirect($this->url() . '?success=' . urlencode('Synchronization completed successfully!'));
         } catch (\Exception $e) {
             Tools::log()->error('WooSync: Sync all error: ' . $e->getMessage());
             $this->redirect($this->url() . '?error=' . urlencode('Sync error: ' . $e->getMessage()));
