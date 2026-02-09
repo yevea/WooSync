@@ -169,23 +169,28 @@ class WooSyncConfig extends Controller
     private function syncAll(): void
     {
         try {
+            // Increase PHP execution time limit (works on some hosting)
+            @set_time_limit(300); // 5 minutes
+            @ini_set('max_execution_time', '300');
+            
             $wooApi = new WooCommerceAPI();
             
             // Sync in order: taxes -> products -> customers -> orders -> stock
+            // Using smaller batch sizes to reduce timeout risk
             $taxService = new TaxSyncService($wooApi);
-            $taxResults = $taxService->sync();
+            $taxResults = $taxService->sync(['per_page' => 20]);
             
             $productService = new ProductSyncService($wooApi);
-            $productResults = $productService->sync();
+            $productResults = $productService->sync(['per_page' => 20]);
             
             $customerService = new CustomerSyncService($wooApi);
-            $customerResults = $customerService->sync();
+            $customerResults = $customerService->sync(['per_page' => 20]);
             
             $orderService = new OrderSyncService($wooApi);
-            $orderResults = $orderService->sync();
+            $orderResults = $orderService->sync(['per_page' => 10]);
             
             $stockService = new StockSyncService($wooApi);
-            $stockResults = $stockService->sync();
+            $stockResults = $stockService->sync(['per_page' => 20]);
             
             $message = sprintf(
                 'Full sync completed! Taxes: %d, Products: %d, Customers: %d, Orders: %d, Stock: %d',
@@ -206,9 +211,13 @@ class WooSyncConfig extends Controller
     private function syncProducts(): void
     {
         try {
+            // Increase PHP execution time limit
+            @set_time_limit(180); // 3 minutes
+            @ini_set('max_execution_time', '180');
+            
             $wooApi = new WooCommerceAPI();
             $service = new ProductSyncService($wooApi);
-            $results = $service->sync();
+            $results = $service->sync(['per_page' => 20]);
             
             $message = sprintf(
                 'Product sync completed: %d synced, %d errors, %d skipped',
@@ -225,9 +234,13 @@ class WooSyncConfig extends Controller
     private function syncCustomers(): void
     {
         try {
+            // Increase PHP execution time limit
+            @set_time_limit(180); // 3 minutes
+            @ini_set('max_execution_time', '180');
+            
             $wooApi = new WooCommerceAPI();
             $service = new CustomerSyncService($wooApi);
-            $results = $service->sync();
+            $results = $service->sync(['per_page' => 20]);
             
             $message = sprintf(
                 'Customer sync completed: %d synced, %d errors, %d skipped',
@@ -244,9 +257,13 @@ class WooSyncConfig extends Controller
     private function syncOrders(): void
     {
         try {
+            // Increase PHP execution time limit
+            @set_time_limit(180); // 3 minutes
+            @ini_set('max_execution_time', '180');
+            
             $wooApi = new WooCommerceAPI();
             $service = new OrderSyncService($wooApi);
-            $results = $service->sync();
+            $results = $service->sync(['per_page' => 10]); // Orders are slower, use smaller batch
             
             $message = sprintf(
                 'Order sync completed: %d synced, %d errors, %d skipped',
@@ -263,9 +280,13 @@ class WooSyncConfig extends Controller
     private function syncStock(): void
     {
         try {
+            // Increase PHP execution time limit
+            @set_time_limit(180); // 3 minutes
+            @ini_set('max_execution_time', '180');
+            
             $wooApi = new WooCommerceAPI();
             $service = new StockSyncService($wooApi);
-            $results = $service->sync();
+            $results = $service->sync(['per_page' => 20]);
             
             $message = sprintf(
                 'Stock sync completed: %d synced, %d errors, %d skipped',
@@ -282,9 +303,13 @@ class WooSyncConfig extends Controller
     private function syncTaxes(): void
     {
         try {
+            // Increase PHP execution time limit
+            @set_time_limit(180); // 3 minutes
+            @ini_set('max_execution_time', '180');
+            
             $wooApi = new WooCommerceAPI();
             $service = new TaxSyncService($wooApi);
-            $results = $service->sync();
+            $results = $service->sync(['per_page' => 20]);
             
             $message = sprintf(
                 'Tax sync completed: %d synced, %d errors, %d skipped',
