@@ -10,6 +10,12 @@ class OrderSyncService
 {
     private $wooApi;
     
+    // Constants
+    private const MAX_LOG_MESSAGE_LENGTH = 2000;
+    private const CUSTOMER_CODE_MIN = 1000;
+    private const CUSTOMER_CODE_MAX = 9999;
+    private const MAX_CODE_GENERATION_ATTEMPTS = 20;
+    
     public function __construct()
     {
         $this->wooApi = new WooCommerceAPI();
@@ -140,23 +146,28 @@ class OrderSyncService
         // Create new customer
         $cliente = new Cliente();
         $cliente->email = $email;
-        $cliente->nombre = trim(($billing['first_name'] ?? '') . ' ' . ($billing['last_name'] ?? ''));
+        
+        // Build customer name with fallback
+        $firstName = trim($billing['first_name'] ?? '');
+        $lastName = trim($billing['last_name'] ?? '');
+        $fullName = trim($firstName . ' ' . $lastName);
+        $cliente->nombre = !empty($fullName) ? $fullName : 'WooCommerce Customer';
+        
         $cliente->telefono1 = $billing['phone'] ?? '';
         
         // Generate unique customer code with retry logic
         $baseCode = strtoupper(substr(str_replace([' ', '.', '@'], '', $email), 0, 6));
-        $maxAttempts = 10;
         $attempt = 0;
         
         do {
-            $code = $baseCode . random_int(100, 999);
+            $code = $baseCode . random_int(self::CUSTOMER_CODE_MIN, self::CUSTOMER_CODE_MAX);
             $testCliente = new Cliente();
             $codeExists = $testCliente->loadFromCode($code);
             $attempt++;
-        } while ($codeExists && $attempt < $maxAttempts);
+        } while ($codeExists && $attempt < self::MAX_CODE_GENERATION_ATTEMPTS);
         
         if ($codeExists) {
-            Tools::log()->error("OrderSyncService: Failed to generate unique customer code after {$maxAttempts} attempts");
+            Tools::log()->error("OrderSyncService: Failed to generate unique customer code after " . self::MAX_CODE_GENERATION_ATTEMPTS . " attempts");
             return null;
         }
         
@@ -178,7 +189,7 @@ class OrderSyncService
     {
         try {
             $log = new \FacturaScripts\Plugins\WooSync\Model\WooSyncLog();
-            $log->message = substr($message, 0, 2000);
+            $log->message = substr($message, 0, self::MAX_LOG_MESSAGE_LENGTH);
             $log->level = $level;
             $log->type = $type;
             $log->reference = $reference;
