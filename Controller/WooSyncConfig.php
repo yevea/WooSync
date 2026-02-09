@@ -5,6 +5,7 @@ use FacturaScripts\Core\Base\Controller;
 use FacturaScripts\Core\Base\ControllerPermissions;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Core\Base\DataBase;
+use FacturaScripts\Plugins\WooSync\Lib\OrderSyncService;
 use Symfony\Component\HttpFoundation\Response;
 
 class WooSyncConfig extends Controller
@@ -271,7 +272,7 @@ class WooSyncConfig extends Controller
             }
 
             // Sync orders using OrderSyncService
-            $orderSync = new \FacturaScripts\Plugins\WooSync\Lib\OrderSyncService();
+            $orderSync = new OrderSyncService();
             $orderSync->sync();
 
             $this->redirect($this->url() . '?success=' . urlencode('Synchronization completed successfully!'));

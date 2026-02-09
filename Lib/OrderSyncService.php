@@ -73,10 +73,10 @@ class OrderSyncService
             $orderNumber = $wooOrder['number'] ?? $wooOrderId;
 
             // Check if order already exists by checking observaciones field for WooCommerce ID
-            $pedido = new Pedido();
+            $existingPedido = new Pedido();
             $where = [new DataBaseWhere('observaciones', '%WooCommerce ID: ' . $wooOrderId . '%', 'LIKE')];
             
-            if ($pedido->loadFromCode('', $where)) {
+            if ($existingPedido->loadFromCode('', $where)) {
                 // Order already synced, skip
                 $this->log("Skipping order #{$orderNumber} - already synced", 'DEBUG', 'order', (string)$wooOrderId);
                 return 'skipped';
@@ -156,10 +156,19 @@ class OrderSyncService
         $cliente->telefono1 = $billing['phone'] ?? '';
         
         // Generate unique customer code with retry logic
-        $baseCode = strtoupper(substr(str_replace([' ', '.', '@'], '', $email), 0, 6));
+        // Extract alphanumeric characters from email and limit to 6 characters
+        $cleanEmail = preg_replace('/[^A-Za-z0-9]/', '', $email);
+        $baseCode = strtoupper(substr($cleanEmail, 0, 6));
+        
+        // Ensure we have at least some characters
+        if (empty($baseCode)) {
+            $baseCode = 'CUST';
+        }
+        
         $attempt = 0;
         
         do {
+            // Generate code with max total length of 10 characters (6 + 4)
             $code = $baseCode . random_int(self::CUSTOMER_CODE_MIN, self::CUSTOMER_CODE_MAX);
             $testCliente = new Cliente();
             $codeExists = $testCliente->loadFromCode($code);
