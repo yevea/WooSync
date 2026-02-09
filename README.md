@@ -36,3 +36,18 @@ Crea / actualiza:
 
 
      
+
+
+## PDF Customizations
+
+### Presupuesto PDF Layout
+This plugin includes a custom PDF template for Presupuesto (Budget/Quote) documents that creates a more compact layout.
+
+**Changes:**
+- Neto (Net), Impuestos (Taxes), and Total are now displayed as rows at the bottom of the article table
+- Eliminates empty space between the article listing and totals section
+- Creates a more professional and compact document layout
+
+**File:** `XMLView/Presupuesto.xml`
+
+The custom template automatically applies when generating Presupuesto PDFs in FacturaScripts 2025.71+.

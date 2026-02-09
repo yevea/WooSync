@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Document: Presupuesto
+    Description: Custom PDF layout for Budget/Quote documents
+    This template displays Neto, Impuestos, and Total as compact rows at the bottom
+    of the article table instead of at the bottom of the page, eliminating empty space.
+-->
+<document>
+    <columns>
+        <column name="reference" display="left" order="10" width="80">
+            <widget type="text" fieldname="referencia" />
+        </column>
+        <column name="description" display="left" order="20">
+            <widget type="text" fieldname="descripcion" />
+        </column>
+        <column name="quantity" display="right" order="30" width="60">
+            <widget type="number" fieldname="cantidad" decimal="2" />
+        </column>
+        <column name="price" display="right" order="40" width="80">
+            <widget type="money" fieldname="pvpunitario" />
+        </column>
+        <column name="discount" display="right" order="50" width="60">
+            <widget type="number" fieldname="dtopor" decimal="0" />
+        </column>
+        <column name="tax" display="right" order="60" width="50">
+            <widget type="number" fieldname="iva" decimal="0" />
+        </column>
+        <column name="total" display="right" order="70" width="80">
+            <widget type="money" fieldname="pvptotal" />
+        </column>
+    </columns>
+    
+    <rows>
+        <row type="header">
+            <column name="reference">Referencia</column>
+            <column name="description">Descripción</column>
+            <column name="quantity">Cant.</column>
+            <column name="price">Precio</column>
+            <column name="discount">Dto.%</column>
+            <column name="tax">IVA%</column>
+            <column name="total">Total</column>
+        </row>
+        
+        <row type="body">
+            <column name="reference" />
+            <column name="description" />
+            <column name="quantity" />
+            <column name="price" />
+            <column name="discount" />
+            <column name="tax" />
+            <column name="total" />
+        </row>
+        
+        <!-- Empty row for separation -->
+        <row type="line-thin">
+            <column name="reference" display="none" />
+            <column name="description" display="none" />
+            <column name="quantity" display="none" />
+            <column name="price" display="none" />
+            <column name="discount" display="none" />
+            <column name="tax" display="none" />
+            <column name="total" display="none" />
+        </row>
+        
+        <!-- Compact totals section as table rows -->
+        <row type="subtotal">
+            <column name="reference" display="none" />
+            <column name="description" display="none" />
+            <column name="quantity" display="none" />
+            <column name="price" display="none" />
+            <column name="discount" display="none" />
+            <column name="tax">Neto:</column>
+            <column name="total">
+                <widget type="money" fieldname="neto" />
+            </column>
+        </row>
+        
+        <row type="subtotal">
+            <column name="reference" display="none" />
+            <column name="description" display="none" />
+            <column name="quantity" display="none" />
+            <column name="price" display="none" />
+            <column name="discount" display="none" />
+            <column name="tax">Impuestos:</column>
+            <column name="total">
+                <widget type="money" fieldname="totaliva" />
+            </column>
+        </row>
+        
+        <row type="total">
+            <column name="reference" display="none" />
+            <column name="description" display="none" />
+            <column name="quantity" display="none" />
+            <column name="price" display="none" />
+            <column name="discount" display="none" />
+            <column name="tax">Total:</column>
+            <column name="total">
+                <widget type="money" fieldname="total" />
+            </column>
+        </row>
+    </rows>
+</document>
