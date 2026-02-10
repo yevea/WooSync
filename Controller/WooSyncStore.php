@@ -15,9 +15,9 @@ class WooSyncStore extends Controller
     public $products = [];
     public $search = '';
     public $store_error = '';
-    public $decimal_separator = ',';
-    public $thousands_separator = '.';
-    public $currency_symbol = '€';
+    public $decimal_separator;
+    public $thousands_separator;
+    public $currency_symbol;
 
     public function getPageData(): array
     {
