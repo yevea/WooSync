@@ -8,6 +8,7 @@ use FacturaScripts\Core\Tools;
 class WooSyncStore extends Controller
 {
     private const PRODUCT_LIMIT = 24;
+    private const LIKE_ESCAPE = '!';
 
     public $products = [];
     public $search = '';
@@ -47,9 +48,14 @@ class WooSyncStore extends Controller
             $conditions = [];
 
             if ($this->search !== '') {
-                $searchLiteral = addcslashes($this->search, "\\%_");
+                $searchLiteral = str_replace(
+                    [self::LIKE_ESCAPE, '%', '_'],
+                    [self::LIKE_ESCAPE . self::LIKE_ESCAPE, self::LIKE_ESCAPE . '%', self::LIKE_ESCAPE . '_'],
+                    $this->search
+                );
                 $searchEscaped = $db->var2str('%' . $searchLiteral . '%');
-                $conditions[] = "(descripcion LIKE {$searchEscaped} ESCAPE '\\\\' OR referencia LIKE {$searchEscaped} ESCAPE '\\\\')";
+                $conditions[] = "(descripcion LIKE {$searchEscaped} ESCAPE '" . self::LIKE_ESCAPE
+                    . "' OR referencia LIKE {$searchEscaped} ESCAPE '" . self::LIKE_ESCAPE . "')";
             }
 
             $whereSql = empty($conditions) ? '' : ' WHERE ' . implode(' AND ', $conditions);
