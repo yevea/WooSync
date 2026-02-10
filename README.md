@@ -16,6 +16,10 @@ Consumer Secret
 Botón manual
 “Sincronizar ahora”
 
+Tienda pública
+Acceso público en: /index.php?page=WooSyncStore
+Permite buscar y listar productos registrados en FacturaScripts.
+
 Qué sincroniza
 productos → productos
 clientes → clientes
