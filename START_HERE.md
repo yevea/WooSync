@@ -1,3 +1,24 @@
+# 🚨 IMPORTANT: PULL CODE FIRST!
+
+## Are You Getting 404 on the Diagnostic?
+
+If you tried to access `debug-customer-sync.php` and got **404 Page Not Found**, that's because you haven't pulled the latest code from Git yet!
+
+### ⚠️ YOU MUST PULL CODE FIRST!
+
+**Read this first:** [PULL_CODE_FIRST.md](PULL_CODE_FIRST.md) ← Complete instructions!
+
+**Quick version:**
+1. cPanel → Git Version Control
+2. Repository: WooSync
+3. Branch: copilot/create-woosync-plugin
+4. Click: "Pull" or "Update"
+5. Done! Files now on your server!
+
+**Then the diagnostic URL will work:** `https://yevea.com/053-contabilidad/fs1/debug-customer-sync.php`
+
+---
+
 # WooSync - Customer Sync Still Failing
 
 ## Your Current Situation
@@ -12,15 +33,14 @@ We've created a diagnostic tool that will show you EXACTLY what's wrong.
 
 ### Quick Fix (5 minutes total)
 
-**Step 1: Pull Latest Code (1 minute)**
+**Step 1: Pull Latest Code (1 minute)** ⚠️ **REQUIRED FIRST!**
 ```
-cPanel → Git Version Control → Pull
+cPanel → Git Version Control → Pull from copilot/create-woosync-plugin
 ```
+**This puts debug-customer-sync.php on your server!**
 
-**Step 2: Download & Upload Debug Script (2 minutes)**
-1. Download `debug-customer-sync.php` from GitHub
-2. Upload to `/home/shopcat/public_html/053-contabilidad/fs1/`
-3. Open `https://yevea.com/053-contabilidad/fs1/debug-customer-sync.php`
+**Step 2: Access Diagnostic (2 minutes)**
+Open: `https://yevea.com/053-contabilidad/fs1/debug-customer-sync.php`
 
 **Step 3: Read Results (1 minute)**
 The diagnostic will show EXACTLY what's failing.
