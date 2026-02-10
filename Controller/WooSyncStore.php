@@ -94,8 +94,4 @@ class WooSyncStore extends Controller
         }
     }
 
-    protected function createViews(): void
-    {
-        // No custom views to create
-    }
 }
