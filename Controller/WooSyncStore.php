@@ -7,12 +7,15 @@ use FacturaScripts\Core\Tools;
 
 class WooSyncStore extends Controller
 {
+    private const PRODUCT_TABLE = 'productos';
     private const PRODUCT_LIMIT = 24;
     private const LIKE_ESCAPE = '!';
 
     public $products = [];
     public $search = '';
     public $store_error = '';
+    public $decimal_separator = ',';
+    public $thousands_separator = '.';
 
     public function getPageData(): array
     {
@@ -42,6 +45,8 @@ class WooSyncStore extends Controller
     {
         $this->search = trim($this->request->query->get('q', ''));
         $this->products = [];
+        $this->decimal_separator = Tools::config('nf1', ',');
+        $this->thousands_separator = Tools::config('nf2', '.');
 
         try {
             $db = new DataBase();
@@ -59,9 +64,9 @@ class WooSyncStore extends Controller
             }
 
             $whereSql = empty($conditions) ? '' : ' WHERE ' . implode(' AND ', $conditions);
-            $sql = 'SELECT referencia, descripcion, pvp FROM productos' . $whereSql
-                . ' ORDER BY descripcion ASC LIMIT ' . self::PRODUCT_LIMIT;
-            $rows = $db->select($sql);
+            $sql = 'SELECT referencia, descripcion, pvp FROM ' . self::PRODUCT_TABLE . $whereSql
+                . ' ORDER BY descripcion ASC';
+            $rows = $db->selectLimit($sql, self::PRODUCT_LIMIT);
 
             foreach ($rows as $row) {
                 $this->products[] = [
