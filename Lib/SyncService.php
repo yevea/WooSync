@@ -6,10 +6,12 @@
 namespace FacturaScripts\Plugins\WooSync\Lib;
 
 use FacturaScripts\Plugins\WooSync\Model\WooSyncLog;
+use FacturaScripts\Core\Base\DataBase;
 
 abstract class SyncService
 {
     protected $wooApi;
+    protected $dataBase;
     protected $syncedCount = 0;
     protected $errorCount = 0;
     protected $skippedCount = 0;
@@ -17,6 +19,7 @@ abstract class SyncService
     public function __construct(WooCommerceAPI $wooApi)
     {
         $this->wooApi = $wooApi;
+        $this->dataBase = new DataBase();
     }
 
     /**
