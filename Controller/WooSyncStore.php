@@ -50,7 +50,13 @@ class WooSyncStore extends Controller
         $this->decimal_separator = Tools::config('nf1', ',');
         $this->thousands_separator = Tools::config('nf2', '.');
         $currency = Divisas::default();
-        $this->currency_symbol = ($currency && !empty($currency->simbolo)) ? $currency->simbolo : '€';
+        if ($currency && !empty($currency->simbolo)) {
+            $this->currency_symbol = $currency->simbolo;
+        } elseif ($currency && !empty($currency->coddivisa)) {
+            $this->currency_symbol = $currency->coddivisa;
+        } else {
+            $this->currency_symbol = 'EUR';
+        }
 
         try {
             $db = new DataBase();
@@ -79,6 +85,10 @@ class WooSyncStore extends Controller
                 $showReference = $description !== '' && $description !== $reference;
                 $price = $row['pvp'] ?? null;
                 $priceValue = ($price === null || $price === '') ? null : (float)$price;
+                $formattedPrice = $priceValue === null
+                    ? null
+                    : number_format($priceValue, 2, $this->decimal_separator, $this->thousands_separator)
+                        . ' ' . $this->currency_symbol;
 
                 $this->products[] = [
                     'referencia' => $reference,
@@ -86,6 +96,7 @@ class WooSyncStore extends Controller
                     'display_name' => $displayName,
                     'show_reference' => $showReference,
                     'pvp' => $priceValue,
+                    'formatted_price' => $formattedPrice,
                 ];
             }
         } catch (\Exception $e) {
