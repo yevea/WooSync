@@ -3,6 +3,7 @@ namespace FacturaScripts\Plugins\WooSync\Controller;
 
 use FacturaScripts\Core\Base\Controller;
 use FacturaScripts\Core\Base\DataBase;
+use FacturaScripts\Core\DataSrc\Divisas;
 use FacturaScripts\Core\Tools;
 
 class WooSyncStore extends Controller
@@ -16,6 +17,7 @@ class WooSyncStore extends Controller
     public $store_error = '';
     public $decimal_separator = ',';
     public $thousands_separator = '.';
+    public $currency_symbol = '€';
 
     public function getPageData(): array
     {
@@ -27,7 +29,7 @@ class WooSyncStore extends Controller
         return $pageData;
     }
 
-    public function publicCore(&$response)
+    public function publicCore(&$response): void
     {
         parent::publicCore($response);
         $this->setTemplate('WooSyncStore');
@@ -47,6 +49,7 @@ class WooSyncStore extends Controller
         $this->products = [];
         $this->decimal_separator = Tools::config('nf1', ',');
         $this->thousands_separator = Tools::config('nf2', '.');
+        $this->currency_symbol = Divisas::default()->simbolo ?: '€';
 
         try {
             $db = new DataBase();
@@ -86,7 +89,7 @@ class WooSyncStore extends Controller
             }
         } catch (\Exception $e) {
             Tools::log()->error('WooSyncStore: Error loading products: ' . $e->getMessage());
-            $this->store_error = 'Unable to load products right now.';
+            $this->store_error = 'Unable to load products. Please try again later or contact support if the problem persists.';
         }
     }
 

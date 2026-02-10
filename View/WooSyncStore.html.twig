@@ -41,7 +41,7 @@
                             <div class="mt-auto">
                                 {% if product.pvp is not null %}
                                     <div class="h5 text-primary mb-1">
-                                        {{ product.pvp | number_format(2, fsc.decimal_separator, fsc.thousands_separator) }} €
+                                        {{ product.pvp | number_format(2, fsc.decimal_separator, fsc.thousands_separator) }} {{ fsc.currency_symbol }}
                                     </div>
                                 {% else %}
                                     <div class="h6 text-muted mb-1">Price on request</div>
