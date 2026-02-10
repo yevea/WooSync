@@ -16,6 +16,7 @@ class WooSyncStore extends Controller
     public $search = '';
     public $store_error = '';
     public $decimal_separator;
+    public $decimal_places;
     public $thousands_separator;
     public $currency_symbol;
 
@@ -46,8 +47,12 @@ class WooSyncStore extends Controller
     private function loadProducts(): void
     {
         $this->search = trim($this->request->query->get('q', ''));
+        if (strlen($this->search) > 100) {
+            $this->search = substr($this->search, 0, 100);
+        }
         $this->products = [];
         $this->decimal_separator = Tools::config('nf1', ',');
+        $this->decimal_places = Tools::decimals();
         $this->thousands_separator = Tools::config('nf2', '.');
         $currency = Divisas::default();
         if ($currency && !empty($currency->simbolo)) {
@@ -87,7 +92,7 @@ class WooSyncStore extends Controller
                 $priceValue = ($price === null || $price === '') ? null : (float)$price;
                 $formattedPrice = $priceValue === null
                     ? null
-                    : number_format($priceValue, 2, $this->decimal_separator, $this->thousands_separator)
+                    : number_format($priceValue, $this->decimal_places, $this->decimal_separator, $this->thousands_separator)
                         . ' ' . $this->currency_symbol;
 
                 $this->products[] = [
