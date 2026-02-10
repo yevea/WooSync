@@ -136,6 +136,9 @@ class CustomerSyncService extends SyncService
                 $cliente->codpais = $this->getDefaultCountryCode();
             }
 
+            // Log customer state before save attempt
+            $this->log("Attempting to save customer {$email}. Code: {$cliente->codcliente}, Country: {$cliente->codpais}, Name: {$cliente->nombre}", 'DEBUG', 'customer', (string)$wooId);
+            
             // Save the customer with detailed error logging
             if ($cliente->save()) {
                 $this->syncedCount++;
@@ -147,7 +150,18 @@ class CustomerSyncService extends SyncService
                 $this->errorCount++;
                 // Get validation errors if available
                 $errors = method_exists($cliente, 'getErrors') ? implode(', ', $cliente->getErrors()) : 'Unknown error';
-                $this->log("Failed to save customer {$email}: {$errors}. Code: {$cliente->codcliente}, Country: {$cliente->codpais}", 'ERROR', 'customer', (string)$wooId);
+                
+                // Enhanced error logging with all customer details
+                $errorDetails = "Failed to save customer {$email}:\n";
+                $errorDetails .= "- Errors: {$errors}\n";
+                $errorDetails .= "- Code: {$cliente->codcliente}\n";
+                $errorDetails .= "- Name: {$cliente->nombre}\n";
+                $errorDetails .= "- Email: {$cliente->email}\n";
+                $errorDetails .= "- Country: {$cliente->codpais}\n";
+                $errorDetails .= "- Address: {$cliente->direccion}\n";
+                $errorDetails .= "- City: {$cliente->ciudad}\n";
+                
+                $this->log($errorDetails, 'ERROR', 'customer', (string)$wooId);
             }
 
         } catch (\Exception $e) {
@@ -243,9 +257,11 @@ class CustomerSyncService extends SyncService
         try {
             // Try Spain first (common default for Spanish FacturaScripts installations)
             if ($this->validateCountryCode('ESP')) {
+                $this->log("Using default country: ESP", 'DEBUG', 'customer');
                 return 'ESP';
             }
             if ($this->validateCountryCode('ES')) {
+                $this->log("Using default country: ES", 'DEBUG', 'customer');
                 return 'ES';
             }
             
@@ -253,10 +269,15 @@ class CustomerSyncService extends SyncService
             $sql = "SELECT codpais FROM paises LIMIT 1";
             $result = $this->dataBase->select($sql);
             if (!empty($result) && isset($result[0]['codpais'])) {
-                return $result[0]['codpais'];
+                $defaultCode = $result[0]['codpais'];
+                $this->log("Using first available country: {$defaultCode}", 'DEBUG', 'customer');
+                return $defaultCode;
             }
+            
+            // Log if no countries found
+            $this->log("WARNING: No countries found in paises table!", 'ERROR', 'customer');
         } catch (\Exception $e) {
-            $this->log("Error getting default country: " . $e->getMessage(), 'WARNING', 'customer');
+            $this->log("Error getting default country: " . $e->getMessage(), 'ERROR', 'customer');
         }
         
         // Ultimate fallback
