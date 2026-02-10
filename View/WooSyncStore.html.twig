@@ -33,15 +33,19 @@
                     <div class="card h-100 shadow-sm">
                         <div class="card-body d-flex flex-column">
                             <h5 class="card-title mb-2">
-                                {{ product.descripcion ? product.descripcion : product.referencia }}
+                                {{ product.display_name }}
                             </h5>
-                            {% if product.descripcion and product.descripcion != product.referencia %}
+                            {% if product.show_reference %}
                                 <p class="text-muted small mb-2">{{ product.referencia }}</p>
                             {% endif %}
                             <div class="mt-auto">
-                                <div class="h5 text-primary mb-1">
-                                    {{ product.pvp | number_format(2, fsc.decimal_separator, fsc.thousands_separator) }} €
-                                </div>
+                                {% if product.pvp is not null %}
+                                    <div class="h5 text-primary mb-1">
+                                        {{ product.pvp | number_format(2, fsc.decimal_separator, fsc.thousands_separator) }} €
+                                    </div>
+                                {% else %}
+                                    <div class="h6 text-muted mb-1">Price on request</div>
+                                {% endif %}
                                 <div class="small text-muted">Contact us to order.</div>
                             </div>
                         </div>

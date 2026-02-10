@@ -69,10 +69,19 @@ class WooSyncStore extends Controller
             $rows = $db->selectLimit($sql, self::PRODUCT_LIMIT);
 
             foreach ($rows as $row) {
+                $reference = (string)($row['referencia'] ?? '');
+                $description = trim((string)($row['descripcion'] ?? ''));
+                $displayName = $description !== '' ? $description : $reference;
+                $showReference = $description !== '' && $description !== $reference;
+                $price = $row['pvp'] ?? null;
+                $priceValue = ($price === null || $price === '') ? null : (float)$price;
+
                 $this->products[] = [
-                    'referencia' => $row['referencia'] ?? '',
-                    'descripcion' => $row['descripcion'] ?? '',
-                    'pvp' => isset($row['pvp']) ? (float)$row['pvp'] : 0.0,
+                    'referencia' => $reference,
+                    'descripcion' => $description,
+                    'display_name' => $displayName,
+                    'show_reference' => $showReference,
+                    'pvp' => $priceValue,
                 ];
             }
         } catch (\Exception $e) {
