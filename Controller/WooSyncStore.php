@@ -11,6 +11,7 @@ class WooSyncStore extends Controller
     private const PRODUCT_TABLE = 'productos';
     private const PRODUCT_LIMIT = 24;
     private const LIKE_ESCAPE = '!';
+    private const MAX_SEARCH_LENGTH = 100;
 
     public $products = [];
     public $search = '';
@@ -19,6 +20,7 @@ class WooSyncStore extends Controller
     public $decimal_places;
     public $thousands_separator;
     public $currency_symbol;
+    public $max_search_length;
 
     public function getPageData(): array
     {
@@ -47,9 +49,12 @@ class WooSyncStore extends Controller
     private function loadProducts(): void
     {
         $this->search = trim($this->request->query->get('q', ''));
-        if (strlen($this->search) > 100) {
-            $this->search = substr($this->search, 0, 100);
-            $this->store_error = Tools::lang()->trans('woosync-store-search-too-long');
+        $this->max_search_length = self::MAX_SEARCH_LENGTH;
+        if (strlen($this->search) > self::MAX_SEARCH_LENGTH) {
+            $this->search = substr($this->search, 0, self::MAX_SEARCH_LENGTH);
+            $this->store_error = Tools::lang()->trans('woosync-store-search-too-long', [
+                '%length%' => self::MAX_SEARCH_LENGTH,
+            ]);
         }
         $this->products = [];
         $this->decimal_separator = Tools::config('nf1', ',');
@@ -75,8 +80,8 @@ class WooSyncStore extends Controller
                     $this->search
                 );
                 $searchEscaped = $db->var2str('%' . $searchLiteral . '%');
-                $conditions[] = "(descripcion LIKE {$searchEscaped} ESCAPE '" . self::LIKE_ESCAPE
-                    . "' OR referencia LIKE {$searchEscaped} ESCAPE '" . self::LIKE_ESCAPE . "')";
+                $escapeClause = " ESCAPE '" . self::LIKE_ESCAPE . "'";
+                $conditions[] = "(descripcion LIKE {$searchEscaped}{$escapeClause} OR referencia LIKE {$searchEscaped}{$escapeClause})";
             }
 
             $whereSql = empty($conditions) ? '' : ' WHERE ' . implode(' AND ', $conditions);
