@@ -22,7 +22,7 @@ class WooSyncStore extends Controller
     public function getPageData(): array
     {
         $pageData = parent::getPageData();
-        $pageData['title'] = 'WooSync Store';
+        $pageData['title'] = 'woosync-store-title';
         $pageData['menu'] = 'public';
         $pageData['icon'] = 'fas fa-store';
         $pageData['showonmenu'] = false;
@@ -49,7 +49,8 @@ class WooSyncStore extends Controller
         $this->products = [];
         $this->decimal_separator = Tools::config('nf1', ',');
         $this->thousands_separator = Tools::config('nf2', '.');
-        $this->currency_symbol = Divisas::default()->simbolo ?: '€';
+        $currency = Divisas::default();
+        $this->currency_symbol = ($currency && !empty($currency->simbolo)) ? $currency->simbolo : '€';
 
         try {
             $db = new DataBase();
@@ -89,7 +90,7 @@ class WooSyncStore extends Controller
             }
         } catch (\Exception $e) {
             Tools::log()->error('WooSyncStore: Error loading products: ' . $e->getMessage());
-            $this->store_error = 'Unable to load products. Please try again later or contact support if the problem persists.';
+            $this->store_error = Tools::lang()->trans('woosync-store-error');
         }
     }
 
