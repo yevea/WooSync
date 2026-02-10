@@ -49,6 +49,7 @@ class WooSyncStore extends Controller
         $this->search = trim($this->request->query->get('q', ''));
         if (strlen($this->search) > 100) {
             $this->search = substr($this->search, 0, 100);
+            $this->store_error = Tools::lang()->trans('woosync-store-search-too-long');
         }
         $this->products = [];
         $this->decimal_separator = Tools::config('nf1', ',');

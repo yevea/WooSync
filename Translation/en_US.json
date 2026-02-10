@@ -6,5 +6,6 @@
     "woosync-store-price-on-request": "Price on request",
     "woosync-store-contact": "Contact us to order.",
     "woosync-store-powered": "Powered by FacturaScripts + WooSync",
-    "woosync-store-error": "Unable to load products. Please try again later or contact support if the problem persists."
+    "woosync-store-error": "Unable to load products. Please try again later or contact support if the problem persists.",
+    "woosync-store-search-too-long": "Search term too long. Please use 100 characters or fewer."
 }
