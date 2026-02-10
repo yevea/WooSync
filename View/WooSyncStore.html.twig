@@ -12,7 +12,7 @@
         <form method="get" action="{{ fsc.url() }}" class="mt-3 mt-md-0">
             <div class="input-group">
                 <input type="text" class="form-control" name="q" placeholder="{{ trans('woosync-store-search-placeholder') }}"
-                       value="{{ fsc.search }}">
+                       value="{{ fsc.search | e }}">
                 <button class="btn btn-primary" type="submit">
                     <i class="fas fa-search fa-fw"></i>
                 </button>
