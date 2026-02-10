@@ -1,5 +1,15 @@
 # WooSync Plugin Installation Guide
 
+## 📌 Important: Plugin Purpose
+
+**WooSync is primarily a WooCommerce synchronization plugin for FacturaScripts.**
+
+This plugin's main features:
+1. **Primary**: Sync WooCommerce products, customers, and orders to FacturaScripts
+2. **Bonus**: Custom compact PDF layout for Presupuesto documents
+
+---
+
 ## Quick Start
 
 ### 1. Installation

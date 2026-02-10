@@ -1,47 +1,74 @@
-# WooSync
+# WooSync - WooCommerce Synchronization Plugin for FacturaScripts
 
-Hi I am Martin, carpenter, noob coder. This is my project is in its early stage, i.e. not finished. 
-The final objective is to create funcional plugin for FacturaScripts (facturascripts.com), 
-which syncs products, stock, clients, and orders from WooCommerce into Facturascripts.
+## 🎯 What is WooSync?
 
-Condiciones actuales: WooCommerce 10.4.3 / WordPress 6.9 está en el mismo shared server con Facturascripts 2025.71 - 
-No tengo acceso a CLI. 
-El objetivo de funcionamiento de WooSync, que aparezcan en FacturaScripts clientes y pedidos de WooCommerce, no está logrado aun. 
+**WooSync is a WooCommerce synchronization plugin for FacturaScripts**, NOT just a PDF customization plugin.
 
-Configuración
-URL de WooCommerce
-Consumer Key
-Consumer Secret
+### Primary Purpose: WooCommerce Sync
+This plugin's main objective is to synchronize data between WooCommerce and FacturaScripts:
+- **Products** (productos)
+- **Customers** (clientes)  
+- **Orders** (pedidos)
+- **Stock** (optional)
 
-Botón manual
-“Sincronizar ahora”
+### Bonus Feature: PDF Customization
+As an added benefit, this plugin also includes a custom Presupuesto PDF template with a compact layout.
 
-Qué sincroniza
-productos → productos
-clientes → clientes
-pedidos → pedidos
-stock → stock / opcional
+---
 
-Flujo (paso a paso)
+## 📋 Core Functionality: WooCommerce Synchronization
+
+Hi I am Martin, carpenter, noob coder. This is my project in its early stage, i.e. not finished. 
+The final objective is to create a functional plugin for FacturaScripts (facturascripts.com) 
+which syncs products, stock, clients, and orders from WooCommerce into FacturaScripts.
+
+### Current Status
+- **WooCommerce Version**: 10.4.3
+- **WordPress Version**: 6.9
+- **FacturaScripts Version**: 2025.71
+- **Environment**: Shared server (no CLI access)
+- **Development Status**: In progress - sync functionality being implemented
+
+### Configuration Required
+- **WooCommerce URL**: Your WooCommerce store URL
+- **Consumer Key**: From WooCommerce REST API settings
+- **Consumer Secret**: From WooCommerce REST API settings
+
+### Manual Sync Button
+"Sincronizar ahora" (Synchronize now)
+
+### What Gets Synchronized
+```
+WooCommerce              →  FacturaScripts
+─────────────────────────────────────────
+productos (products)     →  productos
+clientes (customers)     →  clientes
+pedidos (orders)         →  pedidos
+stock                    →  stock (optional)
+```
+
+### Synchronization Flow
+```
 FacturaScripts
    ↓ (PHP)
-Llama a WooCommerce API
+Calls WooCommerce API
    ↓
-Recibe JSON
+Receives JSON data
    ↓
-Crea / actualiza:
-   - clientes
-   - productos (+stock)
-   - pedidos
+Creates / Updates:
+   - clientes (customers)
+   - productos (products + stock)
+   - pedidos (orders)
+```
 
+---
 
-     
+## 🎁 Bonus Feature: PDF Customizations
 
-
-## PDF Customizations
+In addition to WooCommerce synchronization, this plugin includes a custom PDF template.
 
 ### Presupuesto PDF Layout
-This plugin includes a custom PDF template for Presupuesto (Budget/Quote) documents that creates a more compact layout.
+A custom PDF template for Presupuesto (Budget/Quote) documents with a more compact layout.
 
 **Changes:**
 - Neto (Net), Impuestos (Taxes), and Total are now displayed as rows at the bottom of the article table
@@ -51,3 +78,24 @@ This plugin includes a custom PDF template for Presupuesto (Budget/Quote) docume
 **File:** `XMLView/Presupuesto.xml`
 
 The custom template automatically applies when generating Presupuesto PDFs in FacturaScripts 2025.71+.
+
+**Documentation:**
+- See [PRESUPUESTO_LAYOUT_GUIDE.md](PRESUPUESTO_LAYOUT_GUIDE.md) for visual comparison
+- See [INSTALLATION.md](INSTALLATION.md) for setup instructions
+
+---
+
+## 📦 Plugin Summary
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| **WooCommerce Sync** | 🚧 In Development | Primary feature - sync products, customers, orders |
+| **OrderSyncService** | ✅ Implemented | Service to sync orders from WooCommerce |
+| **CustomerSyncService** | ✅ Integrated | Auto-create customers from WooCommerce orders |
+| **Presupuesto PDF** | ✅ Complete | Bonus - compact PDF layout for quotes |
+
+---
+
+## �� Installation
+
+See [INSTALLATION.md](INSTALLATION.md) for complete installation and configuration instructions.
