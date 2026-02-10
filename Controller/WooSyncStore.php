@@ -7,6 +7,8 @@ use FacturaScripts\Core\Tools;
 
 class WooSyncStore extends Controller
 {
+    private const PRODUCT_LIMIT = 24;
+
     public $products = [];
     public $search = '';
     public $store_error = '';
@@ -45,12 +47,14 @@ class WooSyncStore extends Controller
             $conditions = [];
 
             if ($this->search !== '') {
-                $searchEscaped = $db->escape('%' . $this->search . '%');
-                $conditions[] = "(descripcion LIKE {$searchEscaped} OR referencia LIKE {$searchEscaped})";
+                $searchLiteral = addcslashes($this->search, "\\%_");
+                $searchEscaped = $db->var2str('%' . $searchLiteral . '%');
+                $conditions[] = "(descripcion LIKE {$searchEscaped} ESCAPE '\\\\' OR referencia LIKE {$searchEscaped} ESCAPE '\\\\')";
             }
 
             $whereSql = empty($conditions) ? '' : ' WHERE ' . implode(' AND ', $conditions);
-            $sql = 'SELECT referencia, descripcion, pvp FROM productos' . $whereSql . ' ORDER BY descripcion ASC LIMIT 24';
+            $sql = 'SELECT referencia, descripcion, pvp FROM productos' . $whereSql
+                . ' ORDER BY descripcion ASC LIMIT ' . self::PRODUCT_LIMIT;
             $rows = $db->select($sql);
 
             foreach ($rows as $row) {
