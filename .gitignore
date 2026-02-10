@@ -16,6 +16,5 @@ composer.lock
 *.log
 
 # Development files
-debug*.php
-# Keep test-plugins.php and verify-ini.php for users
-# test*.php
+# debug*.php  -- Allowing debug-customer-sync.php for user diagnostics
+# Keep test-plugins.php, verify-ini.php, and debug-customer-sync.php for users
