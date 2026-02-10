@@ -80,7 +80,8 @@ class CustomerSyncService extends SyncService
             $cliente = new Cliente();
             $where = [new \FacturaScripts\Core\Base\DataBase\DataBaseWhere('email', $email)];
             
-            if (!$cliente->loadFromCode('', $where)) {
+            $isNew = !$cliente->loadFromCode('', $where);
+            if ($isNew) {
                 // New customer - generate code
                 $cliente->codcliente = $this->generateCustomerCode($email);
                 $this->log("Creating new customer: {$email}", 'INFO', 'customer', (string)$wooId);
@@ -97,32 +98,45 @@ class CustomerSyncService extends SyncService
                 $cliente->nombre = $email;
             }
             
+            // Ensure nombre is not too long (FS usually limits to 100 chars)
+            $cliente->nombre = substr($cliente->nombre, 0, 100);
+            
             $cliente->email = $email;
             
             // Billing address
             $billing = $wooCustomer['billing'] ?? [];
             if (!empty($billing)) {
-                $cliente->direccion = $billing['address_1'] ?? '';
-                if (!empty($billing['address_2'])) {
-                    $cliente->direccion .= ' ' . $billing['address_2'];
-                }
-                $cliente->ciudad = $billing['city'] ?? '';
-                $cliente->provincia = $billing['state'] ?? '';
-                $cliente->codpostal = $billing['postcode'] ?? '';
-                $cliente->telefono1 = $billing['phone'] ?? '';
+                $cliente->direccion = substr(trim(($billing['address_1'] ?? '') . ' ' . ($billing['address_2'] ?? '')), 0, 100);
+                $cliente->ciudad = substr($billing['city'] ?? '', 0, 100);
+                $cliente->provincia = substr($billing['state'] ?? '', 0, 100);
+                $cliente->codpostal = substr($billing['postcode'] ?? '', 0, 10);
+                $cliente->telefono1 = substr($billing['phone'] ?? '', 0, 30);
                 
-                // Country
+                // Country - validate it exists in FacturaScripts
                 if (!empty($billing['country'])) {
-                    $cliente->codpais = $billing['country'];
+                    $countryCode = strtoupper($billing['country']);
+                    if ($this->validateCountryCode($countryCode)) {
+                        $cliente->codpais = $countryCode;
+                    } else {
+                        // Try common country code if validation fails
+                        $cliente->codpais = $this->getDefaultCountryCode();
+                        $this->log("Invalid country code '{$countryCode}' for customer {$email}, using default", 'WARNING', 'customer', (string)$wooId);
+                    }
+                } else if ($isNew) {
+                    // Set default country for new customers without country
+                    $cliente->codpais = $this->getDefaultCountryCode();
                 }
                 
                 // Company
                 if (!empty($billing['company'])) {
-                    $cliente->razonsocial = $billing['company'];
+                    $cliente->razonsocial = substr($billing['company'], 0, 100);
                 }
+            } else if ($isNew) {
+                // New customer with no billing info - set default country
+                $cliente->codpais = $this->getDefaultCountryCode();
             }
 
-            // Save the customer
+            // Save the customer with detailed error logging
             if ($cliente->save()) {
                 $this->syncedCount++;
                 $this->log("Successfully synced customer: {$email}", 'INFO', 'customer', (string)$wooId);
@@ -131,13 +145,15 @@ class CustomerSyncService extends SyncService
                 $this->syncContact($cliente, $wooCustomer);
             } else {
                 $this->errorCount++;
-                $this->log("Failed to save customer: {$email}", 'ERROR', 'customer', (string)$wooId);
+                // Get validation errors if available
+                $errors = method_exists($cliente, 'getErrors') ? implode(', ', $cliente->getErrors()) : 'Unknown error';
+                $this->log("Failed to save customer {$email}: {$errors}. Code: {$cliente->codcliente}, Country: {$cliente->codpais}", 'ERROR', 'customer', (string)$wooId);
             }
 
         } catch (\Exception $e) {
             $this->errorCount++;
             $this->log(
-                'Error syncing customer: ' . $e->getMessage(), 
+                'Error syncing customer: ' . $e->getMessage() . ' | ' . $e->getFile() . ':' . $e->getLine(), 
                 'ERROR', 
                 'customer', 
                 (string)($wooCustomer['id'] ?? '')
@@ -198,5 +214,52 @@ class CustomerSyncService extends SyncService
         
         // Fallback: use timestamp-based code if all random attempts fail
         return $baseCode . substr(time(), -6);
+    }
+
+    /**
+     * Validate if a country code exists in FacturaScripts
+     */
+    private function validateCountryCode(string $code): bool
+    {
+        if (empty($code)) {
+            return false;
+        }
+        
+        try {
+            $sql = "SELECT codpais FROM paises WHERE codpais = " . $this->dataBase->var2str($code) . " LIMIT 1";
+            $result = $this->dataBase->select($sql);
+            return !empty($result);
+        } catch (\Exception $e) {
+            $this->log("Error validating country code '{$code}': " . $e->getMessage(), 'WARNING', 'customer');
+            return false;
+        }
+    }
+
+    /**
+     * Get default country code (Spain/ES as fallback, or first available country)
+     */
+    private function getDefaultCountryCode(): string
+    {
+        try {
+            // Try Spain first (common default for Spanish FacturaScripts installations)
+            if ($this->validateCountryCode('ESP')) {
+                return 'ESP';
+            }
+            if ($this->validateCountryCode('ES')) {
+                return 'ES';
+            }
+            
+            // Get any available country from the database
+            $sql = "SELECT codpais FROM paises LIMIT 1";
+            $result = $this->dataBase->select($sql);
+            if (!empty($result) && isset($result[0]['codpais'])) {
+                return $result[0]['codpais'];
+            }
+        } catch (\Exception $e) {
+            $this->log("Error getting default country: " . $e->getMessage(), 'WARNING', 'customer');
+        }
+        
+        // Ultimate fallback
+        return 'ESP';
     }
 }
