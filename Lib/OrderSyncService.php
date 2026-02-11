@@ -156,7 +156,7 @@ class OrderSyncService extends SyncService
     /**
      * Sync order lines
      */
-    private function syncOrderLines(Pedido $pedido, array $wooOrder): int
+    private function syncOrderLines(PedidoCliente $pedido, array $wooOrder): int
     {
         $lineCount = 0;
         $lineItems = $wooOrder['line_items'] ?? [];
