@@ -226,7 +226,7 @@ class CustomerSyncService extends SyncService
     {
         // Use part of email as base code (max 4 chars to leave room for suffix)
         $parts = explode('@', $email);
-        $baseCode = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', substr($parts[0], 0, 4)));
+        $baseCode = strtoupper(preg_replace('/[^A-Z0-9]/i', '', substr($parts[0], 0, 4)));
         
         if (empty($baseCode)) {
             $baseCode = 'CLI';
@@ -234,7 +234,7 @@ class CustomerSyncService extends SyncService
         
         // Try up to 100 times to find a unique code
         for ($i = 0; $i < 100; $i++) {
-            $suffix = str_pad((string)mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
+            $suffix = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
             $code = substr($baseCode . $suffix, 0, 10);
             
             // Check if this code already exists
