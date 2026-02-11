@@ -1,0 +1,20 @@
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# PHP
+vendor/
+composer.lock
+
+# Temporary files
+*.tmp
+*.bak
+*.log
+
+# Development files
+# debug*.php  -- Allowing debug-customer-sync.php for user diagnostics
+# Keep test-plugins.php, verify-ini.php, and debug-customer-sync.php for users

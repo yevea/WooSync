@@ -1,0 +1,107 @@
+═══════════════════════════════════════════════════════════════════════
+           VISUAL COMPARISON: WRONG vs CORRECT INI FILE
+═══════════════════════════════════════════════════════════════════════
+
+❌ WRONG VERSION (Causes Error):
+┌───────────────────────────────────────────────────────────────────┐
+│ name = "WooSync"                                                  │
+│ description = "Sincroniza productos, clientes, pedidos, stock y  │
+│ taxes de WooCommerce con FacturaScripts (one-way sync)"          │
+│ version = "2.0"          ← ❌ QUOTED NUMBER (WRONG!)              │
+│ min_version = "2025"     ← ❌ QUOTED NUMBER (WRONG!)              │
+│ require = "Core"                                                  │
+└───────────────────────────────────────────────────────────────────┘
+
+✅ CORRECT VERSION (Works):
+┌───────────────────────────────────────────────────────────────────┐
+│ name = "WooSync"                                                  │
+│ description = "Sincroniza productos, clientes, pedidos, stock y  │
+│ taxes de WooCommerce con FacturaScripts (one-way sync)"          │
+│ version = 2.0            ← ✅ UNQUOTED NUMBER (CORRECT!)          │
+│ min_version = 2025       ← ✅ UNQUOTED NUMBER (CORRECT!)          │
+│ require = "Core"                                                  │
+└───────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════
+                           KEY DIFFERENCES
+═══════════════════════════════════════════════════════════════════════
+
+Line 3 (version):
+  ❌ WRONG:   version = "2.0"
+  ✅ CORRECT: version = 2.0
+
+Line 4 (min_version):
+  ❌ WRONG:   min_version = "2025"
+  ✅ CORRECT: min_version = 2025
+
+═══════════════════════════════════════════════════════════════════════
+                      HOW TO CHECK YOUR FILE
+═══════════════════════════════════════════════════════════════════════
+
+In cPanel File Manager:
+1. Navigate to: /Plugins/WooSync/
+2. Right-click facturascripts.ini
+3. Click "Edit"
+4. Look at lines 3 and 4
+
+What you should see:
+  version = 2.0          ← NO quotes around 2.0
+  min_version = 2025     ← NO quotes around 2025
+
+If you see quotes around the numbers, you have the WRONG file!
+
+═══════════════════════════════════════════════════════════════════════
+                          QUICK REFERENCE
+═══════════════════════════════════════════════════════════════════════
+
+✅ CORRECT format (what you need):
+name = "WooSync"
+description = "Sincroniza productos, clientes, pedidos, stock y taxes de WooCommerce con FacturaScripts (one-way sync)"
+version = 2.0
+min_version = 2025
+require = "Core"
+
+Copy this exactly if you want to manually fix the file!
+
+═══════════════════════════════════════════════════════════════════════
+                      WHY THIS FORMAT IS REQUIRED
+═══════════════════════════════════════════════════════════════════════
+
+This format matches ALL official FacturaScripts plugins:
+
+backup plugin:
+  version = 3.4          ← No quotes
+  min_version = 2025.6   ← No quotes
+
+Community plugin:
+  version = 1.3          ← No quotes
+  min_version = 2018.15  ← No quotes
+
+OpenServBus plugin:
+  version = 3.4          ← No quotes
+  min_version = 2025     ← No quotes
+
+FacturaScripts expects this exact format!
+
+═══════════════════════════════════════════════════════════════════════
+                            FILE SIZE
+═══════════════════════════════════════════════════════════════════════
+
+The correct file should be:
+  - Size: 191 bytes (approximately)
+  - Lines: 5 (plus blank line at end)
+  - Encoding: UTF-8
+  - Line endings: Unix (LF) or Windows (CRLF) - both work
+
+═══════════════════════════════════════════════════════════════════════
+                         DOWNLOAD THE CORRECT FILE
+═══════════════════════════════════════════════════════════════════════
+
+Direct download link:
+→ https://raw.githubusercontent.com/yevea/WooSync/copilot/create-woosync-plugin/facturascripts.ini
+
+Or on GitHub:
+→ https://github.com/yevea/WooSync/blob/copilot/create-woosync-plugin/facturascripts.ini
+  (Click "Raw" button, then Save As)
+
+═══════════════════════════════════════════════════════════════════════

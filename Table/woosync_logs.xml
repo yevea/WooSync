@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    WooSync Logs Table Schema
+    Stores synchronization activity logs
+-->
+<tabla>
+    <columna>
+        <nombre>id</nombre>
+        <tipo>serial</tipo>
+    </columna>
+    <columna>
+        <nombre>message</nombre>
+        <tipo>text</tipo>
+        <nulo>NO</nulo>
+    </columna>
+    <columna>
+        <nombre>level</nombre>
+        <tipo>character varying(10)</tipo>
+        <defecto>INFO</defecto>
+        <nulo>NO</nulo>
+    </columna>
+    <columna>
+        <nombre>date</nombre>
+        <tipo>timestamp</tipo>
+        <defecto>CURRENT_TIMESTAMP</defecto>
+    </columna>
+    <columna>
+        <nombre>type</nombre>
+        <tipo>character varying(50)</tipo>
+        <nulo>YES</nulo>
+    </columna>
+    <columna>
+        <nombre>reference</nombre>
+        <tipo>character varying(100)</tipo>
+        <nulo>YES</nulo>
+    </columna>
+    <restriccion>
+        <nombre>woosync_logs_pkey</nombre>
+        <tipo>PRIMARY KEY (id)</tipo>
+    </restriccion>
+</tabla>
