@@ -239,8 +239,6 @@ class WooSyncConfig extends Controller
             
             if ($results['errors'] > 0 && $results['synced'] === 0) {
                 $this->redirect($this->url() . '?error=' . urlencode($message));
-            } elseif ($results['errors'] > 0) {
-                $this->redirect($this->url() . '?success=' . urlencode($message));
             } else {
                 $this->redirect($this->url() . '?success=' . urlencode($message));
             }
@@ -268,8 +266,6 @@ class WooSyncConfig extends Controller
             
             if ($results['errors'] > 0 && $results['synced'] === 0) {
                 $this->redirect($this->url() . '?error=' . urlencode($message));
-            } elseif ($results['errors'] > 0) {
-                $this->redirect($this->url() . '?success=' . urlencode($message));
             } else {
                 $this->redirect($this->url() . '?success=' . urlencode($message));
             }
@@ -297,8 +293,6 @@ class WooSyncConfig extends Controller
             
             if ($results['errors'] > 0 && $results['synced'] === 0) {
                 $this->redirect($this->url() . '?error=' . urlencode($message));
-            } elseif ($results['errors'] > 0) {
-                $this->redirect($this->url() . '?success=' . urlencode($message));
             } else {
                 $this->redirect($this->url() . '?success=' . urlencode($message));
             }
@@ -326,8 +320,6 @@ class WooSyncConfig extends Controller
             
             if ($results['errors'] > 0 && $results['synced'] === 0) {
                 $this->redirect($this->url() . '?error=' . urlencode($message));
-            } elseif ($results['errors'] > 0) {
-                $this->redirect($this->url() . '?success=' . urlencode($message));
             } else {
                 $this->redirect($this->url() . '?success=' . urlencode($message));
             }
@@ -355,8 +347,6 @@ class WooSyncConfig extends Controller
             
             if ($results['errors'] > 0 && $results['synced'] === 0) {
                 $this->redirect($this->url() . '?error=' . urlencode($message));
-            } elseif ($results['errors'] > 0) {
-                $this->redirect($this->url() . '?success=' . urlencode($message));
             } else {
                 $this->redirect($this->url() . '?success=' . urlencode($message));
             }
