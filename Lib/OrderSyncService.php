@@ -12,14 +12,6 @@ use FacturaScripts\Dinamic\Model\Producto;
 
 class OrderSyncService extends SyncService
 {
-    private $customerSyncService;
-
-    public function __construct(WooCommerceAPI $wooApi)
-    {
-        parent::__construct($wooApi);
-        $this->customerSyncService = new CustomerSyncService($wooApi);
-    }
-
     /**
      * Sync orders from WooCommerce
      */
@@ -156,7 +148,7 @@ class OrderSyncService extends SyncService
     /**
      * Sync order lines
      */
-    private function syncOrderLines(Pedido $pedido, array $wooOrder): int
+    private function syncOrderLines(PedidoCliente $pedido, array $wooOrder): int
     {
         $lineCount = 0;
         $lineItems = $wooOrder['line_items'] ?? [];
@@ -214,7 +206,7 @@ class OrderSyncService extends SyncService
             return null;
         }
 
-        // Try to find existing customer
+        // Try to find existing customer by email
         $cliente = new Cliente();
         $where = [new \FacturaScripts\Core\Base\DataBase\DataBaseWhere('email', $email)];
         
@@ -222,28 +214,71 @@ class OrderSyncService extends SyncService
             return $cliente;
         }
 
-        // Create customer from order billing data
-        $customerData = [
-            'id' => 0,
-            'email' => $email,
-            'first_name' => $billing['first_name'] ?? '',
-            'last_name' => $billing['last_name'] ?? '',
-            'billing' => $billing
-        ];
-
-        // Use customer sync service to create customer
+        // Customer not found - create from order billing data
         try {
-            $this->customerSyncService->sync(['customers' => [$customerData]]);
-            
-            // Try to load the newly created customer
-            if ($cliente->loadFromCode('', $where)) {
+            $firstName = $billing['first_name'] ?? '';
+            $lastName = $billing['last_name'] ?? '';
+            $nombre = trim($firstName . ' ' . $lastName);
+            if (empty($nombre)) {
+                $nombre = $email;
+            }
+
+            $cliente->codcliente = $this->generateCustomerCode($email);
+            $cliente->nombre = substr($nombre, 0, 100);
+            $cliente->email = $email;
+            $cliente->direccion = substr(trim(($billing['address_1'] ?? '') . ' ' . ($billing['address_2'] ?? '')), 0, 100);
+            $cliente->ciudad = substr($billing['city'] ?? '', 0, 100);
+            $cliente->provincia = substr($billing['state'] ?? '', 0, 100);
+            $cliente->codpostal = substr($billing['postcode'] ?? '', 0, 10);
+            $cliente->telefono1 = substr($billing['phone'] ?? '', 0, 30);
+
+            if (!empty($billing['company'])) {
+                $cliente->razonsocial = substr($billing['company'], 0, 100);
+            } else {
+                $cliente->razonsocial = $cliente->nombre;
+            }
+
+            // Ensure cifnif is set (required by FacturaScripts)
+            if (empty($cliente->cifnif)) {
+                $cliente->cifnif = '';
+            }
+
+            if ($cliente->save()) {
+                $this->log("Created customer from order billing: {$email}", 'INFO', 'order');
                 return $cliente;
+            } else {
+                $this->log("Failed to create customer from order billing: {$email}", 'ERROR', 'order');
             }
         } catch (\Exception $e) {
             $this->log('Error creating customer for order: ' . $e->getMessage(), 'ERROR', 'order');
         }
 
         return null;
+    }
+
+    /**
+     * Generate unique customer code from email
+     */
+    private function generateCustomerCode(string $email): string
+    {
+        $parts = explode('@', $email);
+        $baseCode = strtoupper(preg_replace('/[^A-Z0-9]/i', '', substr($parts[0], 0, 4)));
+
+        if (empty($baseCode)) {
+            $baseCode = 'CUST';
+        }
+
+        for ($i = 0; $i < 100; $i++) {
+            $suffix = random_int(100000, 999999);
+            $code = substr($baseCode . $suffix, 0, 10);
+
+            $cliente = new Cliente();
+            if (!$cliente->loadFromCode($code)) {
+                return $code;
+            }
+        }
+
+        return substr($baseCode . substr(time(), -6), 0, 10);
     }
 
     /**

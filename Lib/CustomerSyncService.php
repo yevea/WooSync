@@ -25,7 +25,8 @@ class CustomerSyncService extends SyncService
             try {
                 $customers = $this->wooApi->getCustomers([
                     'per_page' => $perPage,
-                    'page' => $page
+                    'page' => $page,
+                    'role' => 'customer'
                 ]);
 
                 if (empty($customers)) {
@@ -72,6 +73,14 @@ class CustomerSyncService extends SyncService
             // Skip customers without email
             if (empty($email)) {
                 $this->log("Skipping customer ID {$wooId} - no email", 'WARNING', 'customer', (string)$wooId);
+                $this->skippedCount++;
+                return;
+            }
+
+            // Skip non-customer roles (administrators, shop_manager, etc.)
+            $role = $wooCustomer['role'] ?? '';
+            if (!empty($role) && $role !== 'customer' && $role !== 'subscriber') {
+                $this->log("Skipping user ID {$wooId} - role '{$role}' is not a customer", 'WARNING', 'customer', (string)$wooId);
                 $this->skippedCount++;
                 return;
             }
@@ -127,13 +136,27 @@ class CustomerSyncService extends SyncService
                     $cliente->codpais = $this->getDefaultCountryCode();
                 }
                 
-                // Company
+                // Company / razonsocial (required by FacturaScripts)
                 if (!empty($billing['company'])) {
                     $cliente->razonsocial = substr($billing['company'], 0, 100);
+                } else {
+                    // FacturaScripts requires razonsocial; use customer name as fallback
+                    $cliente->razonsocial = $cliente->nombre;
                 }
-            } else if ($isNew) {
-                // New customer with no billing info - set default country
-                $cliente->codpais = $this->getDefaultCountryCode();
+            } else {
+                if ($isNew) {
+                    // New customer with no billing info - set default country
+                    $cliente->codpais = $this->getDefaultCountryCode();
+                }
+                // FacturaScripts requires razonsocial; use customer name as fallback
+                if (empty($cliente->razonsocial)) {
+                    $cliente->razonsocial = $cliente->nombre;
+                }
+            }
+
+            // Ensure cifnif is set (required by FacturaScripts)
+            if (empty($cliente->cifnif)) {
+                $cliente->cifnif = '';
             }
 
             // Log customer state before save attempt
@@ -206,17 +229,22 @@ class CustomerSyncService extends SyncService
 
     /**
      * Generate unique customer code from email
+     * FacturaScripts codcliente is typically VARCHAR(10)
      */
     private function generateCustomerCode(string $email): string
     {
-        // Use part of email as base code
+        // Use part of email as base code (max 4 chars to leave room for suffix)
         $parts = explode('@', $email);
-        $baseCode = strtoupper(substr($parts[0], 0, 6));
+        $baseCode = strtoupper(preg_replace('/[^A-Z0-9]/i', '', substr($parts[0], 0, 4)));
+        
+        if (empty($baseCode)) {
+            $baseCode = 'CUST';
+        }
         
         // Try up to 100 times to find a unique code
         for ($i = 0; $i < 100; $i++) {
-            $suffix = mt_rand(100, 999);
-            $code = $baseCode . $suffix;
+            $suffix = random_int(100000, 999999);
+            $code = substr($baseCode . $suffix, 0, 10);
             
             // Check if this code already exists
             $cliente = new Cliente();
@@ -227,7 +255,7 @@ class CustomerSyncService extends SyncService
         }
         
         // Fallback: use timestamp-based code if all random attempts fail
-        return $baseCode . substr(time(), -6);
+        return substr($baseCode . substr(time(), -6), 0, 10);
     }
 
     /**
