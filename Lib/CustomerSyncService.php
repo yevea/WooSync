@@ -121,7 +121,7 @@ class CustomerSyncService extends SyncService
                 $cliente->razonsocial = $cliente->nombre;
             }
 
-            // cifnif is NOT NULL in FS schema; ensure it has a value
+            // cifnif is NOT NULL in FS schema; ensure it has a value for new customers
             if ($cliente->cifnif === null) {
                 $cliente->cifnif = '';
             }
@@ -159,7 +159,8 @@ class CustomerSyncService extends SyncService
         try {
             $contacto = new Contacto();
             $where = [
-                new \FacturaScripts\Core\Base\DataBase\DataBaseWhere('codcliente', $cliente->codcliente)
+                new \FacturaScripts\Core\Base\DataBase\DataBaseWhere('codcliente', $cliente->codcliente),
+                new \FacturaScripts\Core\Base\DataBase\DataBaseWhere('email', $cliente->email)
             ];
             
             if (!$contacto->loadFromCode('', $where)) {

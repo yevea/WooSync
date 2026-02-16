@@ -235,7 +235,7 @@ class OrderSyncService extends SyncService
                 $cliente->razonsocial = $cliente->nombre;
             }
 
-            // cifnif is NOT NULL in FS schema; ensure it has a value
+            // cifnif is NOT NULL in FS schema; ensure it has a value for new customers
             if ($cliente->cifnif === null) {
                 $cliente->cifnif = '';
             }
