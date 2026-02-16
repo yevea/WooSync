@@ -258,7 +258,7 @@ class OrderSyncService extends SyncService
         $baseCode = strtoupper(substr($parts[0], 0, 6));
 
         for ($i = 0; $i < 100; $i++) {
-            $suffix = mt_rand(100, 999);
+            $suffix = random_int(100, 999);
             $code = $baseCode . $suffix;
 
             $cliente = new Cliente();
