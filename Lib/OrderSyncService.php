@@ -148,7 +148,7 @@ class OrderSyncService extends SyncService
     /**
      * Sync order lines
      */
-    private function syncOrderLines(Pedido $pedido, array $wooOrder): int
+    private function syncOrderLines(PedidoCliente $pedido, array $wooOrder): int
     {
         $lineCount = 0;
         $lineItems = $wooOrder['line_items'] ?? [];
@@ -234,6 +234,13 @@ class OrderSyncService extends SyncService
 
             if (!empty($billing['company'])) {
                 $cliente->razonsocial = substr($billing['company'], 0, 100);
+            } else {
+                $cliente->razonsocial = $cliente->nombre;
+            }
+
+            // Ensure cifnif is set (required by FacturaScripts)
+            if (empty($cliente->cifnif)) {
+                $cliente->cifnif = '';
             }
 
             if ($cliente->save()) {
@@ -255,11 +262,15 @@ class OrderSyncService extends SyncService
     private function generateCustomerCode(string $email): string
     {
         $parts = explode('@', $email);
-        $baseCode = strtoupper(substr($parts[0], 0, 6));
+        $baseCode = strtoupper(preg_replace('/[^A-Z0-9]/i', '', substr($parts[0], 0, 4)));
+
+        if (empty($baseCode)) {
+            $baseCode = 'CUST';
+        }
 
         for ($i = 0; $i < 100; $i++) {
-            $suffix = random_int(100, 999);
-            $code = $baseCode . $suffix;
+            $suffix = random_int(100000, 999999);
+            $code = substr($baseCode . $suffix, 0, 10);
 
             $cliente = new Cliente();
             if (!$cliente->loadFromCode($code)) {
@@ -267,7 +278,7 @@ class OrderSyncService extends SyncService
             }
         }
 
-        return $baseCode . substr(time(), -6);
+        return substr($baseCode . substr(time(), -6), 0, 10);
     }
 
     /**
