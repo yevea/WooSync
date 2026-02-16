@@ -7,7 +7,7 @@
             <div class="card shadow mb-4">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-sync-alt fa-fw"></i> WooSync Configuration
+                        <i class="fas fa-sync-alt fa-fw"></i> Sincronizar Tienda
                     </h6>
                     <div class="small">
                         Status: 
@@ -41,55 +41,8 @@
                         </div>
                     {% endif %}
 
-                    <!-- Configuration Form -->
-                    <form method="POST" action="{{ fsc.url() }}">
-                        <input type="hidden" name="action" value="save">
-                        
-                        <div class="form-group">
-                            <label for="woocommerce_url">WooCommerce URL *</label>
-                            <input type="url" id="woocommerce_url" name="woocommerce_url" 
-                                   class="form-control" 
-                                   value="{{ fsc.woocommerce_url }}"
-                                   placeholder="https://yourstore.com"
-                                   required>
-                            <small class="form-text text-muted">
-                                Base URL of your WooCommerce installation (must start with https://)
-                            </small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="woocommerce_key">Consumer Key *</label>
-                            <input type="text" id="woocommerce_key" name="woocommerce_key" 
-                                   class="form-control" 
-                                   value="{{ fsc.woocommerce_key }}"
-                                   required>
-                            <small class="form-text text-muted">
-                                From WooCommerce → Settings → Advanced → REST API
-                            </small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="woocommerce_secret">Consumer Secret *</label>
-                            <input type="password" id="woocommerce_secret" name="woocommerce_secret" 
-                                   class="form-control" 
-                                   value="{{ fsc.woocommerce_secret }}"
-                                   required>
-                            <small class="form-text text-muted">
-                                From WooCommerce → Settings → Advanced → REST API
-                            </small>
-                        </div>
-                        
-                        <div class="form-group mt-4">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="fas fa-save fa-fw"></i> 
-                                {% if fsc.woocommerce_url %}Update Settings{% else %}Save Settings{% endif %}
-                            </button>
-                        </div>
-                    </form>
-                    
                     <!-- Quick Action Buttons (shown when configured) -->
                     {% if fsc.woocommerce_url %}
-                        <hr class="my-4">
                         <h5 class="mb-3"><i class="fas fa-bolt fa-fw"></i> Quick Actions</h5>
                         
                         <!-- Timeout Warning -->
@@ -202,6 +155,54 @@
                             </ul>
                         </div>
                     {% endif %}
+
+                    <!-- Configuration Form (at the bottom - infrequent usage) -->
+                    <hr class="my-4">
+                    <h5 class="mb-3"><i class="fas fa-cog fa-fw"></i> WooCommerce Configuration</h5>
+                    <form method="POST" action="{{ fsc.url() }}">
+                        <input type="hidden" name="action" value="save">
+                        
+                        <div class="form-group">
+                            <label for="woocommerce_url">WooCommerce URL *</label>
+                            <input type="url" id="woocommerce_url" name="woocommerce_url" 
+                                   class="form-control" 
+                                   value="{{ fsc.woocommerce_url }}"
+                                   placeholder="https://yourstore.com"
+                                   required>
+                            <small class="form-text text-muted">
+                                Base URL of your WooCommerce installation (must start with https://)
+                            </small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="woocommerce_key">Consumer Key *</label>
+                            <input type="text" id="woocommerce_key" name="woocommerce_key" 
+                                   class="form-control" 
+                                   value="{{ fsc.woocommerce_key }}"
+                                   required>
+                            <small class="form-text text-muted">
+                                From WooCommerce → Settings → Advanced → REST API
+                            </small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="woocommerce_secret">Consumer Secret *</label>
+                            <input type="password" id="woocommerce_secret" name="woocommerce_secret" 
+                                   class="form-control" 
+                                   value="{{ fsc.woocommerce_secret }}"
+                                   required>
+                            <small class="form-text text-muted">
+                                From WooCommerce → Settings → Advanced → REST API
+                            </small>
+                        </div>
+                        
+                        <div class="form-group mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save fa-fw"></i> 
+                                {% if fsc.woocommerce_url %}Update Settings{% else %}Save Settings{% endif %}
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
