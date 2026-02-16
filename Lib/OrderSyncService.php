@@ -94,6 +94,16 @@ class OrderSyncService extends SyncService
             $pedido->codcliente = $customer->codcliente;
             $pedido->nombrecliente = $customer->nombre;
             
+            // Set cifnif from customer
+            if (!empty($customer->cifnif)) {
+                $pedido->cifnif = $customer->cifnif;
+            }
+
+            // Currency - WooCommerce provides ISO currency code (e.g., "EUR", "USD")
+            if (!empty($wooOrder['currency'])) {
+                $pedido->coddivisa = $wooOrder['currency'];
+            }
+            
             // Date
             if (!empty($wooOrder['date_created'])) {
                 $date = date('Y-m-d', strtotime($wooOrder['date_created']));
@@ -103,9 +113,12 @@ class OrderSyncService extends SyncService
             // Status mapping
             $pedido->editable = $this->isOrderEditable($wooOrder['status'] ?? 'pending');
             
-            // Totals
-            $pedido->neto = (float)($wooOrder['total'] ?? 0);
-            $pedido->total = (float)($wooOrder['total'] ?? 0);
+            // Totals - calculate neto (net) properly by subtracting tax from total
+            $total = (float)($wooOrder['total'] ?? 0);
+            $totalTax = (float)($wooOrder['total_tax'] ?? 0);
+            $pedido->neto = $total - $totalTax;
+            $pedido->total = $total;
+            $pedido->totaliva = $totalTax;
             
             // Store WooCommerce order ID in observations
             $pedido->observaciones = "WooCommerce Order #" . $orderNumber . "\n";
@@ -179,8 +192,14 @@ class OrderSyncService extends SyncService
                 $linea->pvpunitario = (float)($item['price'] ?? 0);
                 $linea->pvptotal = (float)($item['total'] ?? 0);
                 
-                // Tax
-                $linea->iva = (float)($item['tax_class'] ?? 0);
+                // Tax - calculate IVA percentage from line total and tax total
+                $lineTotal = (float)($item['total'] ?? 0);
+                $lineTax = (float)($item['total_tax'] ?? 0);
+                if ($lineTotal > 0 && $lineTax > 0) {
+                    $linea->iva = round(($lineTax / $lineTotal) * 100, 2);
+                } else {
+                    $linea->iva = 0;
+                }
 
                 if ($linea->save()) {
                     $lineCount++;
@@ -271,6 +290,11 @@ class OrderSyncService extends SyncService
                 $contacto->ciudad = substr($billing['city'] ?? '', 0, 100);
                 $contacto->provincia = substr($billing['state'] ?? '', 0, 100);
                 $contacto->codpostal = substr($billing['postcode'] ?? '', 0, 10);
+
+                // Country code - WooCommerce sends ISO 2-letter code (e.g., "US", "GB", "ES")
+                if (!empty($billing['country'])) {
+                    $contacto->codpais = $billing['country'];
+                }
 
                 if (!empty($billing['company'])) {
                     $contacto->empresa = substr($billing['company'], 0, 100);
