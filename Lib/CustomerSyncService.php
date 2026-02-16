@@ -91,14 +91,14 @@ class CustomerSyncService extends SyncService
             
             $isNew = !$cliente->loadFromCode('', $where);
             if ($isNew) {
-                // New customer - generate code
-                $cliente->codcliente = $this->generateCustomerCode($email);
+                // Let FacturaScripts auto-generate codcliente via newCode() in saveInsert()
                 $this->log("Creating new customer: {$email}", 'INFO', 'customer', (string)$wooId);
             } else {
                 $this->log("Updating existing customer: {$email}", 'INFO', 'customer', (string)$wooId);
             }
 
-            // Map WooCommerce fields to FacturaScripts
+            // Map WooCommerce fields to FacturaScripts Cliente model
+            // Only set properties that exist on the clientes table
             $firstName = $wooCustomer['first_name'] ?? '';
             $lastName = $wooCustomer['last_name'] ?? '';
             $cliente->nombre = trim($firstName . ' ' . $lastName);
@@ -107,84 +107,35 @@ class CustomerSyncService extends SyncService
                 $cliente->nombre = $email;
             }
             
-            // Ensure nombre is not too long (FS usually limits to 100 chars)
             $cliente->nombre = substr($cliente->nombre, 0, 100);
-            
             $cliente->email = $email;
             
-            // Billing address
+            // Billing data - only set fields that exist on Cliente
             $billing = $wooCustomer['billing'] ?? [];
-            if (!empty($billing)) {
-                $cliente->direccion = substr(trim(($billing['address_1'] ?? '') . ' ' . ($billing['address_2'] ?? '')), 0, 100);
-                $cliente->ciudad = substr($billing['city'] ?? '', 0, 100);
-                $cliente->provincia = substr($billing['state'] ?? '', 0, 100);
-                $cliente->codpostal = substr($billing['postcode'] ?? '', 0, 10);
-                $cliente->telefono1 = substr($billing['phone'] ?? '', 0, 30);
-                
-                // Country - validate it exists in FacturaScripts
-                if (!empty($billing['country'])) {
-                    $countryCode = strtoupper($billing['country']);
-                    if ($this->validateCountryCode($countryCode)) {
-                        $cliente->codpais = $countryCode;
-                    } else {
-                        // Try common country code if validation fails
-                        $cliente->codpais = $this->getDefaultCountryCode();
-                        $this->log("Invalid country code '{$countryCode}' for customer {$email}, using default", 'WARNING', 'customer', (string)$wooId);
-                    }
-                } else if ($isNew) {
-                    // Set default country for new customers without country
-                    $cliente->codpais = $this->getDefaultCountryCode();
-                }
-                
-                // Company / razonsocial (required by FacturaScripts)
-                if (!empty($billing['company'])) {
-                    $cliente->razonsocial = substr($billing['company'], 0, 100);
-                } else {
-                    // FacturaScripts requires razonsocial; use customer name as fallback
-                    $cliente->razonsocial = $cliente->nombre;
-                }
-            } else {
-                if ($isNew) {
-                    // New customer with no billing info - set default country
-                    $cliente->codpais = $this->getDefaultCountryCode();
-                }
-                // FacturaScripts requires razonsocial; use customer name as fallback
-                if (empty($cliente->razonsocial)) {
-                    $cliente->razonsocial = $cliente->nombre;
-                }
+            $cliente->telefono1 = substr($billing['phone'] ?? '', 0, 30);
+            
+            // razonsocial (FS sets to nombre if empty, but we can set from company)
+            if (!empty($billing['company'])) {
+                $cliente->razonsocial = substr($billing['company'], 0, 100);
+            } else if (empty($cliente->razonsocial)) {
+                $cliente->razonsocial = $cliente->nombre;
             }
 
-            // Ensure cifnif is set (required by FacturaScripts)
-            if (empty($cliente->cifnif)) {
+            // cifnif is NOT NULL in FS schema; ensure it has a value for new customers
+            if ($cliente->cifnif === null) {
                 $cliente->cifnif = '';
             }
 
-            // Log customer state before save attempt
-            $this->log("Attempting to save customer {$email}. Code: {$cliente->codcliente}, Country: {$cliente->codpais}, Name: {$cliente->nombre}", 'DEBUG', 'customer', (string)$wooId);
-            
-            // Save the customer with detailed error logging
+            // Save the customer
             if ($cliente->save()) {
                 $this->syncedCount++;
                 $this->log("Successfully synced customer: {$email}", 'INFO', 'customer', (string)$wooId);
                 
-                // Create/update contact
+                // Update the auto-created contact with address data
                 $this->syncContact($cliente, $wooCustomer);
             } else {
                 $this->errorCount++;
-                // Get validation errors if available
-                $errors = method_exists($cliente, 'getErrors') ? implode(', ', $cliente->getErrors()) : 'Unknown error';
-                
-                // Enhanced error logging with all customer details
-                $errorDetails = "Failed to save customer {$email}:\n";
-                $errorDetails .= "- Errors: {$errors}\n";
-                $errorDetails .= "- Code: {$cliente->codcliente}\n";
-                $errorDetails .= "- Name: {$cliente->nombre}\n";
-                $errorDetails .= "- Email: {$cliente->email}\n";
-                $errorDetails .= "- Country: {$cliente->codpais}\n";
-                $errorDetails .= "- Address: {$cliente->direccion}\n";
-                $errorDetails .= "- City: {$cliente->ciudad}\n";
-                
-                $this->log($errorDetails, 'ERROR', 'customer', (string)$wooId);
+                $this->log("Failed to save customer {$email} (code: {$cliente->codcliente})", 'ERROR', 'customer', (string)$wooId);
             }
 
         } catch (\Exception $e) {
@@ -199,116 +150,55 @@ class CustomerSyncService extends SyncService
     }
 
     /**
-     * Sync or create contact for customer
+     * Update contact for customer with address data from WooCommerce.
+     * FacturaScripts auto-creates a Contacto when saving a new Cliente,
+     * so we find and update that contact with address fields.
      */
     private function syncContact(Cliente $cliente, array $wooCustomer): void
     {
         try {
             $contacto = new Contacto();
             $where = [
-                new \FacturaScripts\Core\Base\DataBase\DataBaseWhere('email', $cliente->email),
-                new \FacturaScripts\Core\Base\DataBase\DataBaseWhere('codcliente', $cliente->codcliente)
+                new \FacturaScripts\Core\Base\DataBase\DataBaseWhere('codcliente', $cliente->codcliente),
+                new \FacturaScripts\Core\Base\DataBase\DataBaseWhere('email', $cliente->email)
             ];
             
             if (!$contacto->loadFromCode('', $where)) {
-                // Create new contact
+                // No auto-created contact found; create one
                 $contacto->codcliente = $cliente->codcliente;
                 $contacto->email = $cliente->email;
             }
             
+            // Name fields
             $contacto->nombre = $wooCustomer['first_name'] ?? '';
             $contacto->apellidos = $wooCustomer['last_name'] ?? '';
-            $contacto->telefono1 = $wooCustomer['billing']['phone'] ?? '';
             
-            $contacto->save();
+            if (empty($contacto->nombre) && empty($contacto->apellidos)) {
+                $contacto->nombre = $cliente->nombre;
+            }
+            
+            // Address fields (these belong on Contacto, not Cliente)
+            $billing = $wooCustomer['billing'] ?? [];
+            if (!empty($billing)) {
+                $contacto->direccion = substr(trim(($billing['address_1'] ?? '') . ' ' . ($billing['address_2'] ?? '')), 0, 100);
+                $contacto->ciudad = substr($billing['city'] ?? '', 0, 100);
+                $contacto->provincia = substr($billing['state'] ?? '', 0, 100);
+                $contacto->codpostal = substr($billing['postcode'] ?? '', 0, 10);
+                $contacto->telefono1 = substr($billing['phone'] ?? '', 0, 30);
+                
+                if (!empty($billing['company'])) {
+                    $contacto->empresa = substr($billing['company'], 0, 100);
+                }
+            }
+            
+            $contacto->email = $cliente->email;
+            
+            if (!$contacto->save()) {
+                $this->log("Failed to save contact for customer {$cliente->email}", 'WARNING', 'customer');
+            }
             
         } catch (\Exception $e) {
             $this->log('Error syncing contact: ' . $e->getMessage(), 'WARNING', 'customer');
         }
-    }
-
-    /**
-     * Generate unique customer code from email
-     * FacturaScripts codcliente is typically VARCHAR(10)
-     */
-    private function generateCustomerCode(string $email): string
-    {
-        // Use part of email as base code (max 4 chars to leave room for suffix)
-        $parts = explode('@', $email);
-        $baseCode = strtoupper(preg_replace('/[^A-Z0-9]/i', '', substr($parts[0], 0, 4)));
-        
-        if (empty($baseCode)) {
-            $baseCode = 'CUST';
-        }
-        
-        // Try up to 100 times to find a unique code
-        for ($i = 0; $i < 100; $i++) {
-            $suffix = random_int(100000, 999999);
-            $code = substr($baseCode . $suffix, 0, 10);
-            
-            // Check if this code already exists
-            $cliente = new Cliente();
-            if (!$cliente->loadFromCode($code)) {
-                // Code is unique, return it
-                return $code;
-            }
-        }
-        
-        // Fallback: use timestamp-based code if all random attempts fail
-        return substr($baseCode . substr(time(), -6), 0, 10);
-    }
-
-    /**
-     * Validate if a country code exists in FacturaScripts
-     */
-    private function validateCountryCode(string $code): bool
-    {
-        if (empty($code)) {
-            return false;
-        }
-        
-        try {
-            $sql = "SELECT codpais FROM paises WHERE codpais = " . $this->dataBase->var2str($code) . " LIMIT 1";
-            $result = $this->dataBase->select($sql);
-            return !empty($result);
-        } catch (\Exception $e) {
-            $this->log("Error validating country code '{$code}': " . $e->getMessage(), 'WARNING', 'customer');
-            return false;
-        }
-    }
-
-    /**
-     * Get default country code (Spain/ES as fallback, or first available country)
-     */
-    private function getDefaultCountryCode(): string
-    {
-        try {
-            // Try Spain first (common default for Spanish FacturaScripts installations)
-            if ($this->validateCountryCode('ESP')) {
-                $this->log("Using default country: ESP", 'DEBUG', 'customer');
-                return 'ESP';
-            }
-            if ($this->validateCountryCode('ES')) {
-                $this->log("Using default country: ES", 'DEBUG', 'customer');
-                return 'ES';
-            }
-            
-            // Get any available country from the database
-            $sql = "SELECT codpais FROM paises LIMIT 1";
-            $result = $this->dataBase->select($sql);
-            if (!empty($result) && isset($result[0]['codpais'])) {
-                $defaultCode = $result[0]['codpais'];
-                $this->log("Using first available country: {$defaultCode}", 'DEBUG', 'customer');
-                return $defaultCode;
-            }
-            
-            // Log if no countries found
-            $this->log("WARNING: No countries found in paises table!", 'ERROR', 'customer');
-        } catch (\Exception $e) {
-            $this->log("Error getting default country: " . $e->getMessage(), 'ERROR', 'customer');
-        }
-        
-        // Ultimate fallback
-        return 'ESP';
     }
 }

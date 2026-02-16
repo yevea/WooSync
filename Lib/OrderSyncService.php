@@ -223,13 +223,10 @@ class OrderSyncService extends SyncService
                 $nombre = $email;
             }
 
-            $cliente->codcliente = $this->generateCustomerCode($email);
+            // Only set properties that exist on the clientes table
+            // Let FacturaScripts auto-generate codcliente via newCode() in saveInsert()
             $cliente->nombre = substr($nombre, 0, 100);
             $cliente->email = $email;
-            $cliente->direccion = substr(trim(($billing['address_1'] ?? '') . ' ' . ($billing['address_2'] ?? '')), 0, 100);
-            $cliente->ciudad = substr($billing['city'] ?? '', 0, 100);
-            $cliente->provincia = substr($billing['state'] ?? '', 0, 100);
-            $cliente->codpostal = substr($billing['postcode'] ?? '', 0, 10);
             $cliente->telefono1 = substr($billing['phone'] ?? '', 0, 30);
 
             if (!empty($billing['company'])) {
@@ -238,13 +235,17 @@ class OrderSyncService extends SyncService
                 $cliente->razonsocial = $cliente->nombre;
             }
 
-            // Ensure cifnif is set (required by FacturaScripts)
-            if (empty($cliente->cifnif)) {
+            // cifnif is NOT NULL in FS schema; ensure it has a value for new customers
+            if ($cliente->cifnif === null) {
                 $cliente->cifnif = '';
             }
 
             if ($cliente->save()) {
                 $this->log("Created customer from order billing: {$email}", 'INFO', 'order');
+
+                // Update auto-created contact with address data
+                $this->updateContactAddress($cliente, $billing);
+
                 return $cliente;
             } else {
                 $this->log("Failed to create customer from order billing: {$email}", 'ERROR', 'order');
@@ -257,28 +258,29 @@ class OrderSyncService extends SyncService
     }
 
     /**
-     * Generate unique customer code from email
+     * Update the auto-created contact with address data from billing info
      */
-    private function generateCustomerCode(string $email): string
+    private function updateContactAddress(Cliente $cliente, array $billing): void
     {
-        $parts = explode('@', $email);
-        $baseCode = strtoupper(preg_replace('/[^A-Z0-9]/i', '', substr($parts[0], 0, 4)));
+        try {
+            $contacto = new \FacturaScripts\Dinamic\Model\Contacto();
+            $where = [new \FacturaScripts\Core\Base\DataBase\DataBaseWhere('codcliente', $cliente->codcliente)];
 
-        if (empty($baseCode)) {
-            $baseCode = 'CUST';
-        }
+            if ($contacto->loadFromCode('', $where)) {
+                $contacto->direccion = substr(trim(($billing['address_1'] ?? '') . ' ' . ($billing['address_2'] ?? '')), 0, 100);
+                $contacto->ciudad = substr($billing['city'] ?? '', 0, 100);
+                $contacto->provincia = substr($billing['state'] ?? '', 0, 100);
+                $contacto->codpostal = substr($billing['postcode'] ?? '', 0, 10);
 
-        for ($i = 0; $i < 100; $i++) {
-            $suffix = random_int(100000, 999999);
-            $code = substr($baseCode . $suffix, 0, 10);
+                if (!empty($billing['company'])) {
+                    $contacto->empresa = substr($billing['company'], 0, 100);
+                }
 
-            $cliente = new Cliente();
-            if (!$cliente->loadFromCode($code)) {
-                return $code;
+                $contacto->save();
             }
+        } catch (\Exception $e) {
+            $this->log('Error updating contact address: ' . $e->getMessage(), 'WARNING', 'order');
         }
-
-        return substr($baseCode . substr(time(), -6), 0, 10);
     }
 
     /**
