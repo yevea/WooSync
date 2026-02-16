@@ -25,7 +25,7 @@ class WooSyncConfig extends Controller
     public function getPageData(): array
     {
         $pageData = parent::getPageData();
-        $pageData['title'] = 'WooSync Configuration';
+        $pageData['title'] = 'Sincronizar Tienda';
         $pageData['menu'] = 'admin';
         $pageData['icon'] = 'fas fa-sync-alt';
         $pageData['showonmenu'] = true;

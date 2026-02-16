@@ -9,6 +9,9 @@ use FacturaScripts\Dinamic\Model\Cliente;
 use FacturaScripts\Dinamic\Model\PedidoCliente;
 use FacturaScripts\Dinamic\Model\LineaPedidoCliente;
 use FacturaScripts\Dinamic\Model\Producto;
+use FacturaScripts\Dinamic\Model\Almacen;
+use FacturaScripts\Dinamic\Model\FormaPago;
+use FacturaScripts\Dinamic\Model\Serie;
 
 class OrderSyncService extends SyncService
 {
@@ -90,13 +93,27 @@ class OrderSyncService extends SyncService
                 return;
             }
 
-            // Create new order
+            // Create new order - clear() initializes all default values (codalmacen, codserie, codpago, etc.)
+            $pedido->clear();
             $pedido->codcliente = $customer->codcliente;
             $pedido->nombrecliente = $customer->nombre;
             
-            // Set cifnif from customer
-            if (!empty($customer->cifnif)) {
-                $pedido->cifnif = $customer->cifnif;
+            // Set cifnif from customer (ensure not null)
+            $pedido->cifnif = $customer->cifnif ?? '';
+
+            // Set default warehouse if not already set
+            if (empty($pedido->codalmacen)) {
+                $pedido->codalmacen = $this->getDefaultWarehouse();
+            }
+
+            // Set default payment method if not already set
+            if (empty($pedido->codpago)) {
+                $pedido->codpago = $this->getDefaultPaymentMethod();
+            }
+
+            // Set default serie if not already set
+            if (empty($pedido->codserie)) {
+                $pedido->codserie = $this->getDefaultSerie();
             }
 
             // Currency - WooCommerce provides ISO currency code (e.g., "EUR", "USD")
@@ -108,6 +125,7 @@ class OrderSyncService extends SyncService
             if (!empty($wooOrder['date_created'])) {
                 $date = date('Y-m-d', strtotime($wooOrder['date_created']));
                 $pedido->fecha = $date;
+                $pedido->hora = date('H:i:s', strtotime($wooOrder['date_created']));
             }
 
             // Status mapping
@@ -221,8 +239,19 @@ class OrderSyncService extends SyncService
         $billing = $wooOrder['billing'] ?? [];
         $email = $billing['email'] ?? '';
 
+        // For guest orders without email, generate a placeholder email
         if (empty($email)) {
-            return null;
+            $wooOrderId = $wooOrder['id'] ?? 0;
+            $firstName = $billing['first_name'] ?? '';
+            $lastName = $billing['last_name'] ?? '';
+
+            if (!empty($firstName) || !empty($lastName)) {
+                $namePart = preg_replace('/[^a-z0-9.]+/', '.', strtolower(trim($firstName . '.' . $lastName)));
+                $email = $namePart . '.guest.' . $wooOrderId . '@woosync.local';
+            } else {
+                $email = 'guest.order.' . $wooOrderId . '@woosync.local';
+            }
+            $this->log("Guest order #{$wooOrderId} - using placeholder email: {$email}", 'INFO', 'order');
         }
 
         // Try to find existing customer by email
@@ -314,5 +343,35 @@ class OrderSyncService extends SyncService
     {
         $nonEditableStatuses = ['completed', 'cancelled', 'refunded', 'failed'];
         return !in_array($status, $nonEditableStatuses);
+    }
+
+    /**
+     * Get default warehouse code from FacturaScripts
+     */
+    private function getDefaultWarehouse(): string
+    {
+        $almacen = new Almacen();
+        $results = $almacen->all([], [], 0, 1);
+        return !empty($results) ? $results[0]->codalmacen : '';
+    }
+
+    /**
+     * Get default payment method code from FacturaScripts
+     */
+    private function getDefaultPaymentMethod(): string
+    {
+        $formaPago = new FormaPago();
+        $results = $formaPago->all([], [], 0, 1);
+        return !empty($results) ? $results[0]->codpago : '';
+    }
+
+    /**
+     * Get default serie code from FacturaScripts
+     */
+    private function getDefaultSerie(): string
+    {
+        $serie = new Serie();
+        $results = $serie->all([], [], 0, 1);
+        return !empty($results) ? $results[0]->codserie : '';
     }
 }
