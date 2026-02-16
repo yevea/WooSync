@@ -186,6 +186,12 @@ class CustomerSyncService extends SyncService
                 $contacto->codpostal = substr($billing['postcode'] ?? '', 0, 10);
                 $contacto->telefono1 = substr($billing['phone'] ?? '', 0, 30);
                 
+                // Country code - WooCommerce sends ISO 2-letter code (e.g., "US", "GB", "ES")
+                // which matches FacturaScripts codpais format
+                if (!empty($billing['country'])) {
+                    $contacto->codpais = $billing['country'];
+                }
+                
                 if (!empty($billing['company'])) {
                     $contacto->empresa = substr($billing['company'], 0, 100);
                 }

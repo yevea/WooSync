@@ -192,6 +192,11 @@ class WooSyncConfig extends Controller
             $stockService = new StockSyncService($wooApi);
             $stockResults = $stockService->sync(['per_page' => 20]);
             
+            $totalErrors = $taxResults['errors'] + $productResults['errors'] + 
+                $customerResults['errors'] + $orderResults['errors'] + $stockResults['errors'];
+            $totalSynced = $taxResults['synced'] + $productResults['synced'] + 
+                $customerResults['synced'] + $orderResults['synced'] + $stockResults['synced'];
+            
             $message = sprintf(
                 'Full sync completed! Taxes: %d, Products: %d, Customers: %d, Orders: %d, Stock: %d',
                 $taxResults['synced'],
@@ -201,7 +206,15 @@ class WooSyncConfig extends Controller
                 $stockResults['synced']
             );
             
-            $this->redirect($this->url() . '?success=' . urlencode($message));
+            if ($totalErrors > 0) {
+                $message .= sprintf(' (Total errors: %d)', $totalErrors);
+            }
+            
+            if ($totalErrors > 0 && $totalSynced === 0) {
+                $this->redirect($this->url() . '?error=' . urlencode($message));
+            } else {
+                $this->redirect($this->url() . '?success=' . urlencode($message));
+            }
             
         } catch (\Exception $e) {
             $this->redirect($this->url() . '?error=' . urlencode('Sync error: ' . $e->getMessage()));
@@ -224,7 +237,13 @@ class WooSyncConfig extends Controller
                 $results['synced'], $results['errors'], $results['skipped']
             );
             
-            $this->redirect($this->url() . '?success=' . urlencode($message));
+            if ($results['errors'] > 0 && $results['synced'] === 0) {
+                $this->redirect($this->url() . '?error=' . urlencode($message));
+            } elseif ($results['errors'] > 0) {
+                $this->redirect($this->url() . '?success=' . urlencode($message));
+            } else {
+                $this->redirect($this->url() . '?success=' . urlencode($message));
+            }
             
         } catch (\Exception $e) {
             $this->redirect($this->url() . '?error=' . urlencode('Product sync error: ' . $e->getMessage()));
@@ -247,7 +266,13 @@ class WooSyncConfig extends Controller
                 $results['synced'], $results['errors'], $results['skipped']
             );
             
-            $this->redirect($this->url() . '?success=' . urlencode($message));
+            if ($results['errors'] > 0 && $results['synced'] === 0) {
+                $this->redirect($this->url() . '?error=' . urlencode($message));
+            } elseif ($results['errors'] > 0) {
+                $this->redirect($this->url() . '?success=' . urlencode($message));
+            } else {
+                $this->redirect($this->url() . '?success=' . urlencode($message));
+            }
             
         } catch (\Exception $e) {
             $this->redirect($this->url() . '?error=' . urlencode('Customer sync error: ' . $e->getMessage()));
@@ -270,7 +295,13 @@ class WooSyncConfig extends Controller
                 $results['synced'], $results['errors'], $results['skipped']
             );
             
-            $this->redirect($this->url() . '?success=' . urlencode($message));
+            if ($results['errors'] > 0 && $results['synced'] === 0) {
+                $this->redirect($this->url() . '?error=' . urlencode($message));
+            } elseif ($results['errors'] > 0) {
+                $this->redirect($this->url() . '?success=' . urlencode($message));
+            } else {
+                $this->redirect($this->url() . '?success=' . urlencode($message));
+            }
             
         } catch (\Exception $e) {
             $this->redirect($this->url() . '?error=' . urlencode('Order sync error: ' . $e->getMessage()));
@@ -293,7 +324,13 @@ class WooSyncConfig extends Controller
                 $results['synced'], $results['errors'], $results['skipped']
             );
             
-            $this->redirect($this->url() . '?success=' . urlencode($message));
+            if ($results['errors'] > 0 && $results['synced'] === 0) {
+                $this->redirect($this->url() . '?error=' . urlencode($message));
+            } elseif ($results['errors'] > 0) {
+                $this->redirect($this->url() . '?success=' . urlencode($message));
+            } else {
+                $this->redirect($this->url() . '?success=' . urlencode($message));
+            }
             
         } catch (\Exception $e) {
             $this->redirect($this->url() . '?error=' . urlencode('Stock sync error: ' . $e->getMessage()));
@@ -316,7 +353,13 @@ class WooSyncConfig extends Controller
                 $results['synced'], $results['errors'], $results['skipped']
             );
             
-            $this->redirect($this->url() . '?success=' . urlencode($message));
+            if ($results['errors'] > 0 && $results['synced'] === 0) {
+                $this->redirect($this->url() . '?error=' . urlencode($message));
+            } elseif ($results['errors'] > 0) {
+                $this->redirect($this->url() . '?success=' . urlencode($message));
+            } else {
+                $this->redirect($this->url() . '?success=' . urlencode($message));
+            }
             
         } catch (\Exception $e) {
             $this->redirect($this->url() . '?error=' . urlencode('Tax sync error: ' . $e->getMessage()));
