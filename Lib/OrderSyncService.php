@@ -246,7 +246,8 @@ class OrderSyncService extends SyncService
             $lastName = $billing['last_name'] ?? '';
 
             if (!empty($firstName) || !empty($lastName)) {
-                $email = strtolower(trim($firstName . '.' . $lastName)) . '.guest.' . $wooOrderId . '@woosync.local';
+                $namePart = preg_replace('/[^a-z0-9.]+/', '.', strtolower(trim($firstName . '.' . $lastName)));
+                $email = $namePart . '.guest.' . $wooOrderId . '@woosync.local';
             } else {
                 $email = 'guest.order.' . $wooOrderId . '@woosync.local';
             }
@@ -350,10 +351,8 @@ class OrderSyncService extends SyncService
     private function getDefaultWarehouse(): string
     {
         $almacen = new Almacen();
-        foreach ($almacen->all([], [], 0, 1) as $alm) {
-            return $alm->codalmacen;
-        }
-        return '';
+        $results = $almacen->all([], [], 0, 1);
+        return !empty($results) ? $results[0]->codalmacen : '';
     }
 
     /**
@@ -362,10 +361,8 @@ class OrderSyncService extends SyncService
     private function getDefaultPaymentMethod(): string
     {
         $formaPago = new FormaPago();
-        foreach ($formaPago->all([], [], 0, 1) as $fp) {
-            return $fp->codpago;
-        }
-        return '';
+        $results = $formaPago->all([], [], 0, 1);
+        return !empty($results) ? $results[0]->codpago : '';
     }
 
     /**
@@ -374,9 +371,7 @@ class OrderSyncService extends SyncService
     private function getDefaultSerie(): string
     {
         $serie = new Serie();
-        foreach ($serie->all([], [], 0, 1) as $s) {
-            return $s->codserie;
-        }
-        return '';
+        $results = $serie->all([], [], 0, 1);
+        return !empty($results) ? $results[0]->codserie : '';
     }
 }
