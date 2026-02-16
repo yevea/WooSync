@@ -12,14 +12,6 @@ use FacturaScripts\Dinamic\Model\Producto;
 
 class OrderSyncService extends SyncService
 {
-    private $customerSyncService;
-
-    public function __construct(WooCommerceAPI $wooApi)
-    {
-        parent::__construct($wooApi);
-        $this->customerSyncService = new CustomerSyncService($wooApi);
-    }
-
     /**
      * Sync orders from WooCommerce
      */
@@ -214,7 +206,7 @@ class OrderSyncService extends SyncService
             return null;
         }
 
-        // Try to find existing customer
+        // Try to find existing customer by email
         $cliente = new Cliente();
         $where = [new \FacturaScripts\Core\Base\DataBase\DataBaseWhere('email', $email)];
         
@@ -222,28 +214,60 @@ class OrderSyncService extends SyncService
             return $cliente;
         }
 
-        // Create customer from order billing data
-        $customerData = [
-            'id' => 0,
-            'email' => $email,
-            'first_name' => $billing['first_name'] ?? '',
-            'last_name' => $billing['last_name'] ?? '',
-            'billing' => $billing
-        ];
-
-        // Use customer sync service to create customer
+        // Customer not found - create from order billing data
         try {
-            $this->customerSyncService->sync(['customers' => [$customerData]]);
-            
-            // Try to load the newly created customer
-            if ($cliente->loadFromCode('', $where)) {
+            $firstName = $billing['first_name'] ?? '';
+            $lastName = $billing['last_name'] ?? '';
+            $nombre = trim($firstName . ' ' . $lastName);
+            if (empty($nombre)) {
+                $nombre = $email;
+            }
+
+            $cliente->codcliente = $this->generateCustomerCode($email);
+            $cliente->nombre = substr($nombre, 0, 100);
+            $cliente->email = $email;
+            $cliente->direccion = substr(trim(($billing['address_1'] ?? '') . ' ' . ($billing['address_2'] ?? '')), 0, 100);
+            $cliente->ciudad = substr($billing['city'] ?? '', 0, 100);
+            $cliente->provincia = substr($billing['state'] ?? '', 0, 100);
+            $cliente->codpostal = substr($billing['postcode'] ?? '', 0, 10);
+            $cliente->telefono1 = substr($billing['phone'] ?? '', 0, 30);
+
+            if (!empty($billing['company'])) {
+                $cliente->razonsocial = substr($billing['company'], 0, 100);
+            }
+
+            if ($cliente->save()) {
+                $this->log("Created customer from order billing: {$email}", 'INFO', 'order');
                 return $cliente;
+            } else {
+                $this->log("Failed to create customer from order billing: {$email}", 'ERROR', 'order');
             }
         } catch (\Exception $e) {
             $this->log('Error creating customer for order: ' . $e->getMessage(), 'ERROR', 'order');
         }
 
         return null;
+    }
+
+    /**
+     * Generate unique customer code from email
+     */
+    private function generateCustomerCode(string $email): string
+    {
+        $parts = explode('@', $email);
+        $baseCode = strtoupper(substr($parts[0], 0, 6));
+
+        for ($i = 0; $i < 100; $i++) {
+            $suffix = mt_rand(100, 999);
+            $code = $baseCode . $suffix;
+
+            $cliente = new Cliente();
+            if (!$cliente->loadFromCode($code)) {
+                return $code;
+            }
+        }
+
+        return $baseCode . substr(time(), -6);
     }
 
     /**

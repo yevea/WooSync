@@ -25,7 +25,8 @@ class CustomerSyncService extends SyncService
             try {
                 $customers = $this->wooApi->getCustomers([
                     'per_page' => $perPage,
-                    'page' => $page
+                    'page' => $page,
+                    'role' => 'customer'
                 ]);
 
                 if (empty($customers)) {
@@ -72,6 +73,14 @@ class CustomerSyncService extends SyncService
             // Skip customers without email
             if (empty($email)) {
                 $this->log("Skipping customer ID {$wooId} - no email", 'WARNING', 'customer', (string)$wooId);
+                $this->skippedCount++;
+                return;
+            }
+
+            // Skip non-customer roles (administrators, shop_manager, etc.)
+            $role = $wooCustomer['role'] ?? '';
+            if (!empty($role) && $role !== 'customer' && $role !== 'subscriber') {
+                $this->log("Skipping user ID {$wooId} - role '{$role}' is not a customer", 'WARNING', 'customer', (string)$wooId);
                 $this->skippedCount++;
                 return;
             }
